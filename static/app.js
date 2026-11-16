@@ -6,7 +6,6 @@ const SUITS = ["spade", "heart", "diamond", "club"]; // stable per player id
 let state = { players: [], games: [] };
 let route = parseHash();
 let editingRoundId = null;
-let addingRound = false;
 let renamingPlayerId = null;
 let statsSort = { key: "mean", dir: 1 };
 let pendingFocusFirstInput = false;
@@ -250,7 +249,6 @@ function renderGame(host, game) {
         el("h1", { id: "gameTitle" }, game.name),
         el("div", { class: "sub" }, `${fmtDate(game.created_at)} · ${roster.length} players · ${game.rounds.length} rounds`)),
       el("div", { style: "display:flex;gap:4px" },
-        roster.length ? iconBtn("new-round", "Add round", plusCircleSvg()) : null,
         iconBtn("rename-game", "Rename game", pencilSvg()),
         iconBtn("delete-game", "Delete game", trashSvg())),
     ),
@@ -282,8 +280,6 @@ function renderGame(host, game) {
   );
   if (!roster.length) {
     roundsPanel.append(el("div", { class: "empty" }, "Add players first, then score the rounds."));
-  } else if (!game.rounds.length && !addingRound) {
-    roundsPanel.append(el("div", { class: "empty" }, "No rounds yet. Tap the + next to the game name to score the first round."));
   } else {
     const table = el("table", { class: "round-table" });
     const headRow = el("tr", {}, el("th", { class: "round-no" }, ""));
@@ -309,27 +305,26 @@ function renderGame(host, game) {
         tbody.append(tr);
       }
     });
-    if (addingRound && editingRoundId === null) tbody.append(entryRowEl(game, roster, null, game.rounds.length + 1));
+    // the free line is always present (also at the start of a game) when not editing a round
+    if (editingRoundId === null) tbody.append(entryRowEl(game, roster, null, game.rounds.length + 1));
     table.append(tbody);
 
     const wrap = el("div", { class: "grid-scroll" }, table);
     roundsPanel.append(wrap);
 
     const editing = editingRoundId !== null;
-    if (editing || addingRound) {
-      roundsPanel.append(
-        el("div", { class: "entry-actions" },
-          el("span", { class: "entry-hint" }, "\u2013 or blank = not in the round"),
-          el("div", { style: "display:flex;gap:8px" },
-            editing
-              ? el("button", { class: "btn danger", dataset: { action: "delete-round", id: editingRoundId } }, "Delete round")
-              : null,
-            el("button", { class: "btn", dataset: { action: editing ? "cancel-edit" : "cancel-add" } }, "Cancel"),
-            el("button", { class: "btn primary", dataset: { action: editing ? "save-round" : "add-round" } },
-              editing ? "Save changes" : "Add round")),
-        ),
-      );
-    }
+    roundsPanel.append(
+      el("div", { class: "entry-actions" },
+        el("span", { class: "entry-hint" }, "\u2013 or blank = not in the round"),
+        el("div", { style: "display:flex;gap:8px" },
+          editing
+            ? el("button", { class: "btn danger", dataset: { action: "delete-round", id: editingRoundId } }, "Delete round")
+            : null,
+          el("button", { class: "btn", dataset: { action: editing ? "cancel-edit" : "cancel-add" } }, "Cancel"),
+          el("button", { class: "btn primary", dataset: { action: editing ? "save-round" : "add-round" } },
+            editing ? "Save changes" : "Add round")),
+      ),
+    );
   }
   host.append(roundsPanel);
 
@@ -585,11 +580,6 @@ function moonSvg() {
   return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
     el("path", { d: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" }));
 }
-function plusCircleSvg() {
-  return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
-    el("circle", { cx: "12", cy: "12", r: "9" }),
-    el("path", { d: "M12 8v8M8 12h8" }));
-}
 function userPlusSvg() {
   return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
     el("path", { d: "M15 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" }),
@@ -713,21 +703,19 @@ async function act(action, node) {
         await refresh();
         break;
       }
-      case "new-round":
-        addingRound = true;
-        render();
+      case "cancel-add": {
+        // the entry row is permanent — Cancel just clears it
+        document.querySelectorAll(".entry-row .score-input").forEach((i) => (i.value = ""));
+        const first = document.querySelector(".entry-row .score-input");
+        if (first) first.focus();
         break;
-      case "cancel-add":
-        addingRound = false;
-        render();
-        break;
+      }
       case "edit-round":
         editingRoundId = id;
         render();
         break;
       case "cancel-edit":
         editingRoundId = null;
-        addingRound = false;
         render();
         break;
       case "delete-round": {
@@ -751,10 +739,8 @@ async function act(action, node) {
         } catch (e) { showEntryError(e.message); return; }
         editingRoundId = null;
         if (action === "add-round") {
-          // keep the entry row open so the next round can be scored immediately
+          // focus the entry row so the next round can be scored immediately
           pendingFocusFirstInput = true;
-        } else {
-          addingRound = false;
         }
         await refresh();
         break;
@@ -887,7 +873,6 @@ document.addEventListener("keydown", (e) => {
 window.addEventListener("hashchange", () => {
   route = parseHash();
   editingRoundId = null;
-  addingRound = false;
   renamingPlayerId = null;
   render();
 });
