@@ -1,7 +1,7 @@
 /* Cambio scorekeeper — vanilla JS frontend */
 "use strict";
 
-const SUITS = ["spade", "heart", "diamond", "club"]; // stable per player id
+
 
 let state = { players: [], games: [] };
 let route = parseHash();
@@ -79,29 +79,11 @@ try {
   });
 } catch (e) {}
 
-function hashId(id) {
-  let h = 5381;
-  for (const c of id) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0;
-  return h;
-}
-function suitOf(p) { return SUITS[hashId(p.id) % SUITS.length]; }
-function suitSvg(kind) {
-  const paths = {
-    spade: 'M12 3C9.6 7.8 5 10 5 13.6a3.8 3.8 0 0 0 7.4 1.5c-.1 1.7-.8 3.2-1.9 4.3h3c-1.1-1.1-1.8-2.6-1.9-4.3a3.8 3.8 0 0 0 7.4-1.5C19 10 14.4 7.8 12 3z',
-    heart: 'M12 20.5C8.5 17.8 4.5 14.6 3.4 11.2A4.6 4.6 0 0 1 12 7.9a4.6 4.6 0 0 1 8.6 3.3C19.5 14.6 15.5 17.8 12 20.5z',
-    diamond: 'M12 3l6.5 9L12 21l-6.5-9L12 3z',
-    club: null,
-  };
-  const svg = el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" });
-  if (kind === "club") {
-    svg.append(el("circle", { cx: "12", cy: "7.6", r: "3.1" }));
-    svg.append(el("circle", { cx: "8.1", cy: "13.4", r: "3.1" }));
-    svg.append(el("circle", { cx: "15.9", cy: "13.4", r: "3.1" }));
-    svg.append(el("path", { d: "M10.6 14.5c-.2 2-1 3.7-2.1 4.8h7c-1.1-1.1-1.9-2.8-2.1-4.8" }));
-  } else {
-    svg.append(el("path", { d: paths[kind] }));
-  }
-  return svg;
+// brand logo chip — theme-aware: white plate on dark backgrounds, dark plate on light
+function logoChip(cls = "suit") {
+  const light = document.documentElement.dataset.theme === "light";
+  return el("span", { class: cls },
+    el("img", { class: "logo-chip", src: light ? "/icons/cambio-logo_black.svg" : "/icons/cambio-logo_white.svg", alt: "", "aria-hidden": "true" }));
 }
 function initialsOf(name) {
   const parts = name.trim().split(/\s+/);
@@ -287,7 +269,7 @@ function renderGame(host, game) {
   } else {
     const table = el("table", { class: "round-table" });
     const headRow = el("tr", {}, el("th", { class: "round-no" }, ""));
-    for (const p of roster) headRow.append(el("th", {}, el("span", { class: "th-suit" }, suitSvg(suitOf(p))), p.name));
+    for (const p of roster) headRow.append(el("th", {}, logoChip("th-suit"), p.name));
     headRow.append(el("th", { class: "round-edit" }));
     table.append(el("thead", {}, headRow));
 
@@ -344,7 +326,7 @@ function renderGame(host, game) {
     for (const p of played) {
       const s = stats[p.id];
       mb.append(el("tr", {},
-        el("td", { class: "name-cell" }, el("span", { class: "suit" }, suitSvg(suitOf(p))), p.name),
+        el("td", { class: "name-cell" }, logoChip(), p.name),
         el("td", { class: "num" }, String(s.rounds)),
         el("td", { class: "num" }, fmtMean(s.total, s.rounds)),
         el("td", { class: "num" }, String(s.wins))));
@@ -358,7 +340,7 @@ function renderGame(host, game) {
 function playerCard(p, game) {
   const roundsPlayed = game.rounds.filter((r) => r.scores[p.id] !== undefined).length;
   const card = el("div", { class: `pcard${roundsPlayed ? " has-history" : ""}`, title: `${p.name} · ${roundsPlayed} rounds` });
-  card.append(el("span", { class: "suit" }, suitSvg(suitOf(p))));
+  card.append(logoChip());
   card.append(el("span", { class: "initials" }, initialsOf(p.name)));
   if (!roundsPlayed) card.append(el("button", { class: "remove", dataset: { action: "remove-from-roster", id: p.id, game: game.id }, "aria-label": `Remove ${p.name}` }, "\u00d7"));
   return card;
@@ -462,7 +444,7 @@ function renderStatsView() {
   const tbody = el("tbody");
   for (const r of rows) {
     tbody.append(el("tr", {},
-      el("td", { class: "name-cell" }, el("span", { class: "suit" }, suitSvg(suitOf(r.p))), el("span", { class: "p-name" }, r.p.name)),
+      el("td", { class: "name-cell" }, logoChip(), el("span", { class: "p-name" }, r.p.name)),
       el("td", { class: "num" }, String(r.games)),
       el("td", { class: "num" }, String(r.rounds)),
       el("td", { class: "num" }, fmtMean(r.total, r.rounds)),
@@ -485,7 +467,7 @@ function fmtMean(total, rounds) {
 function statCard(r, rank) {
   return el("div", { class: "scard" },
     el("div", { class: "scard-head" },
-      el("span", { class: "suit" }, suitSvg(suitOf(r.p))),
+      logoChip(),
       el("span", { class: "p-name" }, r.p.name),
       el("span", { class: `scard-rank${rank === 1 ? " lead" : ""}` }, "#" + rank)),
     el("div", { class: "scard-main num" }, fmtMean(r.total, r.rounds),
@@ -543,7 +525,7 @@ function renderPlayersView() {
     for (const p of state.players) {
       const s = stats[p.id];
       const row = el("div", { class: "player-row" });
-      row.append(el("div", { class: "pavatar" }, el("span", { class: "suit" }, suitSvg(suitOf(p))), initialsOf(p.name)));
+      row.append(el("div", { class: "pavatar" }, logoChip(), initialsOf(p.name)));
       if (renamingPlayerId === p.id) {
         const inp = el("input", { class: "rename-input", value: p.name, maxlength: 30, "aria-label": `Rename ${p.name}` });
         inp.addEventListener("keydown", (e) => {
@@ -848,7 +830,7 @@ function fillPlayerMenu(menu) {
   const candidates = state.players.filter((p) => !game.roster.includes(p.id));
   for (const p of candidates) {
     menu.append(el("button", { class: "menu-item", dataset: { action: "pick-player", id: p.id } },
-      el("span", { class: "suit" }, suitSvg(suitOf(p))), p.name));
+      logoChip(), p.name));
   }
   menu.append(el("button", { class: "menu-item menu-new", dataset: { action: "menu-new-player" } }, "+ Add new player"));
 }

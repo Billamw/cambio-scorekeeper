@@ -14,10 +14,10 @@
     "ast_empty": true
   },
   "app.py": {
-    "mtime": 1794771995.370033,
-    "seen": 1794797016.363733,
-    "ast_hash": "776cf1a46a22b2fcea2acd96d9d83384",
-    "semantic_hash": "776cf1a46a22b2fcea2acd96d9d83384"
+    "mtime": 1794832505.4680388,
+    "seen": 1794833851.5666506,
+    "ast_hash": "34eb90cde0277e8fe10eb5468e78b4bc",
+    "semantic_hash": ""
   },
   "docker-compose.yml": {
     "mtime": 1794775537.9823272,
@@ -26,9 +26,9 @@
     "semantic_hash": "6005a0bad5699cef0fa7959c1a531405"
   },
   "static/app.js": {
-    "mtime": 1794803596.2480764,
-    "seen": 1794803656.5749626,
-    "ast_hash": "86e8586a2fc2e0e6366b038c42a4d3dd",
+    "mtime": 1794832506.1290085,
+    "seen": 1794833851.566656,
+    "ast_hash": "2f1fefb1bbacc2645893107175155f3d",
     "semantic_hash": ""
   },
   "README.md": {
@@ -77,6 +77,42 @@
     "mtime": 1794775568.9586904,
     "seen": 1794797340.1366973,
     "ast_hash": "2aa33124046bba4b3e4fd054e6abbf52",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_black.svg": {
+    "mtime": 1794831892.311992,
+    "seen": 1794833851.5666745,
+    "ast_hash": "0cf66c90d92437b6df77e832c45d406b",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_black_192.png": {
+    "mtime": 1794831753.219289,
+    "seen": 1794833851.5666769,
+    "ast_hash": "e1f3b580b57df74b7baf59d7e38ed735",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_black_512.png": {
+    "mtime": 1794831683.9269462,
+    "seen": 1794833851.5666785,
+    "ast_hash": "c5ebfbe75c70adf50f22501a87fec43e",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_white.svg": {
+    "mtime": 1794831342.5169454,
+    "seen": 1794833851.5666807,
+    "ast_hash": "c100d6d7b598a9fdaf094ad3cdf42955",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_white_192.png": {
+    "mtime": 1794831767.202762,
+    "seen": 1794833851.566682,
+    "ast_hash": "0cc9cd63bb6a2f75c85e3af2de1a54fb",
+    "semantic_hash": ""
+  },
+  "icons/cambio-logo_white_512.png": {
+    "mtime": 1794831401.5093973,
+    "seen": 1794833851.5666835,
+    "ast_hash": "bba43bc9eb24f3dc0a33294f63a68403",
     "semantic_hash": ""
   }
 }

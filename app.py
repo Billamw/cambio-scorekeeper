@@ -315,3 +315,4 @@ def index():
 
 
 app.mount("/static", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/icons", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).StaticFiles(directory=Path(__file__).parent / "icons"), name="icons")
