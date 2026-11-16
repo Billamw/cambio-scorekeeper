@@ -702,10 +702,8 @@ async function act(action, node) {
         const game = gameById(route.gameId);
         if (!game) return;
         await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, id] });
+        closePlayerMenu();
         await refresh();
-        // keep the menu open so several players can be added back-to-back at the table
-        const menu = document.querySelector(".player-menu");
-        if (menu) fillPlayerMenu(menu);
         break;
       }
       case "menu-new-player": {
