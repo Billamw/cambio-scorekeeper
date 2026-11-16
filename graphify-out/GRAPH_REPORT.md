@@ -1,7 +1,7 @@
 # Graph Report - cambio-scorekeeper  (2026-11-16)
 
 ## Corpus Check
-- 5 files · ~9,616 words
+- 5 files · ~9,634 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8635be43`
+- Built from commit: `40d25a65`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

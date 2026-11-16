@@ -18,7 +18,9 @@ function el(tag, attrs = {}, ...children) {
     ? document.createElementNS("http://www.w3.org/2000/svg", tag)
     : document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
-    if (k === "class") node.className = v;
+    // setAttribute works for both HTML and SVG nodes — assigning .className
+    // throws on SVG elements (getter-only property)
+    if (k === "class") node.setAttribute("class", v);
     else if (k === "dataset") Object.assign(node.dataset, v);
     else if (k.startsWith("on") && typeof v === "function") node.addEventListener(k.slice(2), v);
     else if (v !== null && v !== undefined && v !== false) node.setAttribute(k, v === true ? "" : v);
