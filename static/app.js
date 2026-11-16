@@ -670,9 +670,9 @@ async function act(action, node) {
         if (top + mh > innerHeight - 8) top = Math.max(8, br.top - 6 - mh); // flip above
         menu.style.left = `${left}px`;
         menu.style.top = `${top}px`;
-        const close = () => { closePlayerMenu(); document.removeEventListener("click", onDoc); document.removeEventListener("keydown", onKey); };
-        const onDoc = (e) => { if (!menu.contains(e.target)) close(); };
-        const onKey = (e) => { if (e.key === "Escape") close(); };
+        const onDoc = (e) => { if (!menu.contains(e.target)) closePlayerMenu(); };
+        const onKey = (e) => { if (e.key === "Escape") closePlayerMenu(); };
+        playerMenuCleanup = () => { document.removeEventListener("click", onDoc); document.removeEventListener("keydown", onKey); };
         setTimeout(() => { document.addEventListener("click", onDoc); document.addEventListener("keydown", onKey); }, 0);
         break;
       }
@@ -813,8 +813,13 @@ function editingRoundIndex(rid) {
   return game ? game.rounds.findIndex((r) => r.id === rid) : -1;
 }
 
+let playerMenuCleanup = null;
+
 function closePlayerMenu() {
   document.querySelectorAll(".player-menu").forEach((m) => m.remove());
+  // also drop the document-level outside-click/Escape listeners, otherwise a
+  // stale listener kills the next menu that opens on the very same tap
+  if (playerMenuCleanup) { const c = playerMenuCleanup; playerMenuCleanup = null; c(); }
 }
 
 function readEntryRow() {
