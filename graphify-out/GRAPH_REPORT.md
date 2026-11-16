@@ -1,17 +1,17 @@
 # Graph Report - cambio-scorekeeper  (2026-11-16)
 
 ## Corpus Check
-- 7 files · ~15,171 words
+- 7 files · ~15,551 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
+- Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .example 1, .css 1)
 
 ## Summary
-- 146 nodes · 337 edges · 16 communities (13 shown, 3 thin omitted)
+- 154 nodes · 345 edges · 14 communities (13 shown, 1 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `aef15b73`
+- Built from commit: `8f3e9f22`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - app.js
 - el
 - app.py
-- cambio
+- ts-cambio
 - render
 - create_game
 - save
@@ -28,10 +28,8 @@
 - create_player
 - toggleTheme
 - sw.js
-- backup
-- edit_round
-- gameById
-- renderChrome
+- storeRead
+- act
 
 ## God Nodes (most connected - your core abstractions)
 1. `el()` - 22 edges
@@ -46,37 +44,37 @@
 10. `create_game()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `act()` --calls--> `el()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 1 → community 0_
-- `gameRow()` --calls--> `el()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 1 → community 14_
-- `iconBtn()` --calls--> `el()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 1 → community 15_
+- `renderGame()` --indirect_call--> `playerById()`  [INFERRED]
+  static/app.js → static/app.js  _Bridges community 14 → community 1_
+- `RoundIn` --inherits--> `BaseModel`  [EXTRACTED]
+  app.py →   _Bridges community 8 → community 5_
+- `GamePatch` --inherits--> `BaseModel`  [EXTRACTED]
+  app.py →   _Bridges community 6 → community 5_
+- `PlayerIn` --inherits--> `BaseModel`  [EXTRACTED]
+  app.py →   _Bridges community 9 → community 5_
 - `act()` --calls--> `api()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 4 → community 0_
-- `renderPlayersView()` --calls--> `api()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 4 → community 1_
+  static/app.js → static/app.js  _Bridges community 14 → community 4_
 
 ## Import Cycles
 - None detected.
 
-## Communities (16 total, 3 thin omitted)
+## Communities (14 total, 1 thin omitted)
 
 ### Community 0 - "app.js"
-Cohesion: 0.15
-Nodes (17): act(), autoGameName(), cachedState(), closePlayerMenu(), confirmDialog(), newId(), readEntryRow(), route (+9 more)
+Cohesion: 0.18
+Nodes (11): fmtDate(), moonSvg(), renderChrome(), route, STAT_COLS, state, statsSort, statsView (+3 more)
 
 ### Community 1 - "el"
-Cohesion: 0.23
-Nodes (19): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fillPlayerMenu(), fmtMean(), initialsOf() (+11 more)
+Cohesion: 0.20
+Nodes (22): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fmtMean(), gameRow(), iconBtn() (+14 more)
 
 ### Community 2 - "app.py"
-Cohesion: 0.17
-Nodes (4): _asset_version(), get_state(), index(), service_worker()
+Cohesion: 0.13
+Nodes (6): _asset_version(), backup(), get_state(), index(), service_worker(), _startup()
 
-### Community 3 - "cambio"
-Cohesion: 0.22
-Nodes (8): build, container_name, environment, ports, restart, volumes, services, cambio
+### Community 3 - "ts-cambio"
+Cohesion: 0.12
+Nodes (16): build, container_name, environment, ports, restart, volumes, services, cambio (+8 more)
 
 ### Community 4 - "render"
 Cohesion: 0.36
@@ -95,8 +93,8 @@ Cohesion: 0.17
 Nodes (11): background_color, description, display, icons, id, name, orientation, scope (+3 more)
 
 ### Community 8 - "sync"
-Cohesion: 0.32
-Nodes (5): add_round(), _new_id(), sync(), SyncIn, _valid_scores()
+Cohesion: 0.24
+Nodes (7): add_round(), edit_round(), _new_id(), RoundIn, sync(), SyncIn, _valid_scores()
 
 ### Community 9 - "create_player"
 Cohesion: 0.47
@@ -106,25 +104,25 @@ Nodes (5): _clean_name(), create_player(), _name_taken(), PlayerIn, rename_playe
 Cohesion: 0.67
 Nodes (4): applyTheme(), currentTheme(), syncThemeColor(), toggleTheme()
 
-### Community 14 - "gameById"
-Cohesion: 0.33
-Nodes (6): editingRoundIndex(), gameById(), gameRow(), latestGame(), renderGameView(), renderHome()
+### Community 12 - "storeRead"
+Cohesion: 0.67
+Nodes (3): cachedState(), storeBlank(), storeRead()
 
-### Community 15 - "renderChrome"
-Cohesion: 0.40
-Nodes (5): fmtDate(), iconBtn(), moonSvg(), renderChrome(), sunSvg()
+### Community 14 - "act"
+Cohesion: 0.22
+Nodes (11): act(), autoGameName(), closePlayerMenu(), confirmDialog(), editingRoundIndex(), fillPlayerMenu(), gameById(), newId() (+3 more)
 
 ## Knowledge Gaps
-- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `el()` connect `el` to `app.js`, `gameById`, `renderChrome`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Should `app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected._
-- **Why does `sync()` connect `sync` to `create_player`, `app.py`, `save`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `act()` connect `app.js` to `el`, `toggleTheme`, `render`, `gameById`?**
+- **Why does `el()` connect `el` to `app.js`, `act`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Should `app.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.13157894736842105 - nodes in this community are weakly interconnected._
+- **Why does `sync()` connect `sync` to `create_player`, `app.py`, `save`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **Should `ts-cambio` be split into smaller, more focused modules?**
+  _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._

@@ -1,0 +1,26 @@
+services:
+  cambio:
+    build: .
+    container_name: cambio-scorekeeper
+    ports:
+      - "3087:8000"
+    volumes:
+      - ./data:/data  # all game data lives in this one folder (data.json + .bak files)
+    environment:
+      - CAMBIO_DATA=/data
+    restart: unless-stopped
+
+  ts-cambio:
+    image: tailscale/tailscale:latest
+    container_name: ts-cambio
+    network_mode: "service:cambio"
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+    volumes:
+      - ./ts-state-cambio:/var/lib/tailscale
+    command: >
+      sh -c "tailscaled --tun=userspace-networking --state=/var/lib/tailscale/tailscaled.state &
+             sleep 5 &&
+             tailscale up --authkey=$${TS_AUTHKEY} --hostname=cambio &&
+             tailscale funnel --bg 8000 && wait"
+    restart: unless-stopped
