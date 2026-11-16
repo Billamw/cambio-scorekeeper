@@ -6,12 +6,12 @@
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
 
 ## Summary
-- 110 nodes · 266 edges · 12 communities (11 shown, 1 thin omitted)
+- 110 nodes · 267 edges · 12 communities (11 shown, 1 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4a9fc6a7`
+- Built from commit: `29bf631f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,7 @@
 - patch_game
 - act
 - save
-- render
+- renderGameView
 - create_game
 - create_player
 - load
@@ -39,19 +39,19 @@
 7. `render()` - 10 edges
 8. `create_game()` - 9 edges
 9. `renderChrome()` - 8 edges
-10. `patch_game()` - 8 edges
+10. `renderStatsView()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `renderGame()` --indirect_call--> `playerById()`  [INFERRED]
   static/app.js → static/app.js  _Bridges community 5 → community 1_
-- `errorNote()` --calls--> `el()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 1 → community 7_
 - `gameRow()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 7_
+- `moonSvg()` --calls--> `el()`  [EXTRACTED]
   static/app.js → static/app.js  _Bridges community 1 → community 0_
-- `act()` --calls--> `api()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 7 → community 5_
 - `act()` --calls--> `toggleTheme()`  [EXTRACTED]
   static/app.js → static/app.js  _Bridges community 0 → community 5_
+- `act()` --calls--> `gameById()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 7 → community 5_
 
 ## Import Cycles
 - None detected.
@@ -59,12 +59,12 @@
 ## Communities (12 total, 1 thin omitted)
 
 ### Community 0 - "app.js"
-Cohesion: 0.16
-Nodes (16): applyTheme(), currentTheme(), fmtDate(), gameRow(), latestGame(), moonSvg(), renderChrome(), renderHome() (+8 more)
+Cohesion: 0.19
+Nodes (13): applyTheme(), currentTheme(), fmtDate(), moonSvg(), renderChrome(), route, STAT_COLS, state (+5 more)
 
 ### Community 1 - "el"
 Cohesion: 0.25
-Nodes (18): checkSvg(), computeStats(), el(), entryRowEl(), fmtMean(), hashId(), iconBtn(), initialsOf() (+10 more)
+Nodes (19): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fmtMean(), hashId(), iconBtn() (+11 more)
 
 ### Community 3 - "cambio"
 Cohesion: 0.22
@@ -75,16 +75,16 @@ Cohesion: 0.29
 Nodes (6): edit_round(), GameIn, GamePatch, patch_game(), RoundIn, _valid_scores()
 
 ### Community 5 - "act"
-Cohesion: 0.29
-Nodes (8): act(), closePlayerMenu(), confirmDialog(), editingRoundIndex(), gameById(), playerById(), readEntryRow(), showEntryError()
+Cohesion: 0.27
+Nodes (11): act(), api(), closePlayerMenu(), confirmDialog(), playerById(), readEntryRow(), refresh(), render() (+3 more)
 
 ### Community 6 - "save"
 Cohesion: 0.38
 Nodes (4): delete_game(), delete_round(), _find_game(), save()
 
-### Community 7 - "render"
-Cohesion: 0.43
-Nodes (7): api(), errorNote(), refresh(), render(), renderFooter(), renderGameView(), saveRename()
+### Community 7 - "renderGameView"
+Cohesion: 0.33
+Nodes (6): editingRoundIndex(), gameById(), gameRow(), latestGame(), renderGameView(), renderHome()
 
 ### Community 8 - "create_game"
 Cohesion: 0.40
@@ -108,5 +108,5 @@ Nodes (3): delete_player(), _find_player(), _player_has_round_history()
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `el()` connect `el` to `app.js`, `act`, `render`?**
+- **Why does `el()` connect `el` to `app.js`, `act`, `renderGameView`?**
   _High betweenness centrality (0.011) - this node is a cross-community bridge._

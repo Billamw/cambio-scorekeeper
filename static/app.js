@@ -450,7 +450,7 @@ function renderStatsView() {
   const tbody = el("tbody");
   for (const r of rows) {
     tbody.append(el("tr", {},
-      el("td", { class: "name-cell" }, el("span", { class: "suit" }, suitOf(r.p)), el("span", { class: "p-name" }, r.p.name)),
+      el("td", { class: "name-cell" }, el("span", { class: "suit" }, suitSvg(suitOf(r.p))), el("span", { class: "p-name" }, r.p.name)),
       el("td", { class: "num" }, String(r.games)),
       el("td", { class: "num" }, String(r.rounds)),
       el("td", { class: "num" }, fmtMean(r.total, r.rounds)),
