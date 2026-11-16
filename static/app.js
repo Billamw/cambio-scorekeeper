@@ -8,6 +8,8 @@ let route = parseHash();
 let editingRoundId = null;
 let renamingPlayerId = null;
 let statsSort = { key: "mean", dir: 1 };
+const STATS_VIEW_KEY = "cambio-stats-view";
+let statsView = (() => { try { return localStorage.getItem(STATS_VIEW_KEY) === "table" ? "table" : "cards"; } catch (e) { return "cards"; } })();
 let pendingFocusFirstInput = false;
 let loadError = null;
 
@@ -413,7 +415,10 @@ function renderStatsView() {
   const totalRounds = state.games.reduce((n, g) => n + g.rounds.length, 0);
   host.append(el("div", { class: "title-row" },
     el("div", {}, el("h1", {}, "Stats"),
-      el("div", { class: "sub" }, `${state.games.length} games · ${totalRounds} rounds across all nights`))));
+      el("div", { class: "sub" }, `${state.games.length} games · ${totalRounds} rounds across all nights`)),
+    rows.length ? el("div", { class: "seg" },
+      el("button", { class: `seg-btn${statsView === "cards" ? " active" : ""}`, dataset: { action: "stats-view-cards" } }, "Cards"),
+      el("button", { class: `seg-btn${statsView === "table" ? " active" : ""}`, dataset: { action: "stats-view-table" } }, "Table")) : null));
 
   if (!rows.length) {
     host.append(el("div", { class: "panel" }, el("div", { class: "empty" },
@@ -430,10 +435,20 @@ function renderStatsView() {
       el("div", { class: "kpi-value" }, leader.p.name, el("small", {}, fmtMean(leader.total, leader.rounds))))),
   );
 
-  // sortable table
+  // player cards or sortable table (toggle in the title row); both follow statsSort
   const dir = statsSort.dir;
   const key = statsSort.key;
   rows.sort((a, b) => (a[key] - b[key]) * dir || a.p.name.localeCompare(b.p.name));
+
+  if (statsView === "cards") {
+    const grid = el("div", { class: "stats-cards" });
+    rows.forEach((r, i) => grid.append(statCard(r, i + 1)));
+    host.append(grid);
+    const col = STAT_COLS.find((c) => c.key === key);
+    host.append(el("div", { class: "table-note", style: "margin-top:10px" },
+      `sorted by ${col.label} ${dir === 1 ? "\u25b2" : "\u25bc"} \u00b7 switch to table to change`));
+    return;
+  }
 
   const table = el("table", { class: "stats-table" });
   const head = el("tr", {}, el("th", {}, "Player"));
@@ -464,6 +479,26 @@ function renderStatsView() {
 
 function fmtMean(total, rounds) {
   return (total / rounds).toFixed(1);
+}
+
+// one player's stats as a card (rank = position in the current sort order)
+function statCard(r, rank) {
+  return el("div", { class: "scard" },
+    el("div", { class: "scard-head" },
+      el("span", { class: "suit" }, suitSvg(suitOf(r.p))),
+      el("span", { class: "p-name" }, r.p.name),
+      el("span", { class: `scard-rank${rank === 1 ? " lead" : ""}` }, "#" + rank)),
+    el("div", { class: "scard-main num" }, fmtMean(r.total, r.rounds),
+      el("div", { class: "scard-main-label" }, "avg pts \u00b7 lower is better")),
+    el("div", { class: "scard-grid" },
+      statCell("Games", String(r.games)),
+      statCell("Rounds", String(r.rounds)),
+      statCell("Wins", String(r.wins)),
+      statCell("Win rate", Math.round(r.winrate) + "%")),
+    el("div", { class: "scard-foot" }, `best ${r.best} \u00b7 worst ${r.worst}`));
+}
+function statCell(label, value) {
+  return el("div", {}, el("div", { class: "scell-label" }, label), el("div", { class: "scell-value num" }, value));
 }
 
 // ---------- players view ----------
@@ -787,6 +822,13 @@ async function act(action, node) {
         const key = node.dataset.key;
         if (statsSort.key === key) statsSort.dir *= -1;
         else statsSort = { key, dir: 1 };
+        render();
+        break;
+      }
+      case "stats-view-cards":
+      case "stats-view-table": {
+        statsView = action === "stats-view-cards" ? "cards" : "table";
+        try { localStorage.setItem(STATS_VIEW_KEY, statsView); } catch (e) {}
         render();
         break;
       }

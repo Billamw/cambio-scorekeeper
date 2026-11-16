@@ -208,6 +208,26 @@ tr.row-editing td { background: var(--raised); }
 .stats-table .p-name { font-weight: 500; }
 .table-note { margin-top: 10px; color: var(--faint); font-size: var(--fs-small); }
 
+/* ---------- stats: cards/table switch + per-player cards ---------- */
+.seg { display: flex; background: var(--surface); border-radius: var(--radius-control); padding: 3px; gap: 2px; }
+.seg-btn { border: 0; background: transparent; color: var(--muted); font-size: var(--fs-small); font-weight: 500; height: 30px; padding: 0 14px; border-radius: var(--radius-control); cursor: pointer; transition: background-color var(--t-hover) ease, color var(--t-hover) ease; white-space: nowrap; }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active { background: var(--raised); color: var(--text); }
+.stats-cards { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
+.scard { background: var(--surface); border-radius: var(--radius-card); padding: var(--card-pad); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.scard-head { display: flex; align-items: center; gap: 8px; }
+.scard-head .suit { width: 14px; color: var(--faint); font-size: 13px; }
+.scard-head .p-name { font-weight: 600; }
+.scard-rank { margin-left: auto; color: var(--faint); font-size: var(--fs-small); }
+.scard-rank.lead { color: var(--accent); font-weight: 600; }
+.scard-main { text-align: center; font-size: 34px; line-height: 1.1; font-weight: 500; letter-spacing: -0.02em; padding: 4px 0; }
+.scard-main-label { margin-top: 4px; color: var(--faint); font-size: var(--fs-small); }
+.scard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; border-top: 1px solid var(--rule); padding-top: 12px; }
+.scell-label { color: var(--muted); font-size: var(--fs-small); }
+.scell-value { margin-top: 2px; font-size: 16px; font-weight: 500; }
+.scard-foot { border-top: 1px solid var(--rule); padding-top: 10px; color: var(--muted); font-size: var(--fs-small); }
+@media (min-width: 700px) { .stats-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* ---------- players list ---------- */
 .player-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 0; }
 .player-row + .player-row { border-top: 1px solid var(--rule); }
@@ -266,6 +286,7 @@ dialog.confirm .dlg-actions { display: flex; justify-content: flex-end; gap: 8px
   /* touch targets */
   .score-input, .entry-row td { height: 46px; }
   .btn { min-height: 44px; }
+  .seg-btn { min-height: 44px; }
   .game-row, .player-row { min-height: 56px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; } }
