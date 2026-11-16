@@ -1126,10 +1126,36 @@ window.addEventListener("online", () => { refresh().then(() => syncNow()); });
 window.addEventListener("offline", updateSyncIcon);
 setInterval(() => { if (navigator.onLine && store.pendingCount()) syncNow(); }, 30000);
 
-// ---------- PWA service worker ----------
+// ---------- PWA service worker + auto-update check on load ----------
 if ("serviceWorker" in navigator) {
+  let swReg = null;
+  const SW_RELOAD_KEY = "cambio-sw-reloaded";
+  // Pick up a new version by reloading once (debounced so it can never loop).
+  const maybeReloadForUpdate = () => {
+    if (!navigator.serviceWorker.controller) return; // first install: this page is already fresh
+    const last = Number(sessionStorage.getItem(SW_RELOAD_KEY) || 0);
+    if (Date.now() - last < 60000) return;
+    sessionStorage.setItem(SW_RELOAD_KEY, String(Date.now()));
+    location.reload();
+  };
+  const watchInstall = (worker) => {
+    if (!worker) return;
+    // Reload only AFTER the new worker has had a beat to activate + claim
+    // (skipWaiting). Reloading at the exact "installed" moment races the
+    // activation in Chromium and strands the new worker in "waiting".
+    const onInstalled = () => setTimeout(maybeReloadForUpdate, 1200);
+    if (worker.state === "installed") onInstalled();
+    else worker.addEventListener("statechange", () => { if (worker.state === "installed") onInstalled(); }, { once: true });
+  };
+  // Explicit check on every load — without it Chrome only re-checks ~24h apart.
+  const checkForUpdates = () => {
+    if (!swReg) return;
+    if (swReg.waiting) watchInstall(swReg.waiting); // update arrived while the app was closed
+    else swReg.update().then(() => watchInstall(swReg.installing)).catch(() => {});
+  };
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
+    navigator.serviceWorker.register("/sw.js").then((reg) => { swReg = reg; checkForUpdates(); }).catch(() => {});
   });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdates(); });
 }
 syncThemeColor();

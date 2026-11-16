@@ -1,6 +1,6 @@
 // Cambio service worker — app-shell cache for PWA install + offline shell.
 // /api/* is NEVER cached: game data always comes from the server.
-const CACHE = "cambio-v2";
+const CACHE = "cambio-v3";
 const SHELL = [
   "/",
   "/static/manifest.json",
