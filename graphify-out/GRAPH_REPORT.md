@@ -1,7 +1,9 @@
 # Graph Report - cambio-scorekeeper  (2026-11-16)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 5 files · ~9,636 words
+- Verdict: corpus is large enough that graph structure adds value.
+- Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
 
 ## Summary
 - 110 nodes · 266 edges · 12 communities (11 shown, 1 thin omitted)
@@ -9,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `aac9475b`
+- Built from commit: `def8d39a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,15 +43,15 @@
 
 ## Surprising Connections (you probably didn't know these)
 - `renderGame()` --indirect_call--> `playerById()`  [INFERRED]
-  static/app.js → static/app.js  _Bridges community 1 → community 5_
-- `create_game()` --references--> `GameIn`  [EXTRACTED]
-  app.py → app.py  _Bridges community 4 → community 8_
-- `PlayerIn` --inherits--> `BaseModel`  [EXTRACTED]
-  app.py →   _Bridges community 9 → community 4_
-- `renderGame()` --calls--> `fmtDate()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 0 → community 1_
-- `render()` --calls--> `renderChrome()`  [EXTRACTED]
-  static/app.js → static/app.js  _Bridges community 0 → community 7_
+  static/app.js → static/app.js  _Bridges community 5 → community 1_
+- `errorNote()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 7_
+- `gameRow()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 0_
+- `act()` --calls--> `api()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 7 → community 5_
+- `act()` --calls--> `toggleTheme()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 0 → community 5_
 
 ## Import Cycles
 - None detected.

@@ -618,6 +618,12 @@ async function act(action, node) {
         const game = gameById(route.gameId);
         if (!game) return;
         const t = document.getElementById("gameTitle");
+        if (!t) {
+          // already renaming — refocus the open input instead of starting over
+          const open = document.querySelector(".title-row .rename-input");
+          if (open) open.focus();
+          return;
+        }
         const inp = el("input", { class: "rename-input", value: game.name, maxlength: 30 });
         t.replaceWith(inp);
         inp.focus(); inp.select();
