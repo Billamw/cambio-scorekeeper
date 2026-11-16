@@ -743,7 +743,12 @@ async function act(action, node) {
           else await api("PATCH", `/api/games/${game.id}/rounds/${editingRoundId}`, { scores });
         } catch (e) { showEntryError(e.message); return; }
         editingRoundId = null;
-        addingRound = false;
+        if (action === "add-round") {
+          // keep the entry row open so the next round can be scored immediately
+          pendingFocusFirstInput = true;
+        } else {
+          addingRound = false;
+        }
         await refresh();
         break;
       }

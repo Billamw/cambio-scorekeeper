@@ -1,0 +1,34 @@
+{
+  ".taste-skill/direction.json": {
+    "mtime": 1794772176.5104878,
+    "seen": 1794797016.3637145,
+    "ast_hash": "f17557be5b71deb1909e8bb5580f7539",
+    "semantic_hash": "f17557be5b71deb1909e8bb5580f7539",
+    "ast_empty": true
+  },
+  ".taste-skill/inspect/report.json": {
+    "mtime": 1794775571.9867983,
+    "seen": 1794797016.3637269,
+    "ast_hash": "7247702257fbe1ec73030d092c1a6a77",
+    "semantic_hash": "7247702257fbe1ec73030d092c1a6a77",
+    "ast_empty": true
+  },
+  "app.py": {
+    "mtime": 1794771995.370033,
+    "seen": 1794797016.363733,
+    "ast_hash": "776cf1a46a22b2fcea2acd96d9d83384",
+    "semantic_hash": "776cf1a46a22b2fcea2acd96d9d83384"
+  },
+  "docker-compose.yml": {
+    "mtime": 1794775537.9823272,
+    "seen": 1794797016.3638854,
+    "ast_hash": "6005a0bad5699cef0fa7959c1a531405",
+    "semantic_hash": "6005a0bad5699cef0fa7959c1a531405"
+  },
+  "static/app.js": {
+    "mtime": 1794795958.1375647,
+    "seen": 1794797016.3639946,
+    "ast_hash": "9f2288e8c787b5314029de2c060071e7",
+    "semantic_hash": "9f2288e8c787b5314029de2c060071e7"
+  }
+}
