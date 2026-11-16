@@ -146,13 +146,14 @@ function confirmDialog(title, body, okLabel = "Delete") {
     document.getElementById("confirmTitle").textContent = title;
     document.getElementById("confirmBody").textContent = body;
     const ok = document.getElementById("confirmOk");
+    const cancel = document.getElementById("confirmCancel");
     ok.textContent = okLabel;
     let done = false;
     const finish = (v) => { if (!done) { done = true; ok.removeEventListener("click", onOk); cancel.removeEventListener("click", onCancel); dlg.close(); resolve(v); } };
     const onOk = () => finish(true);
     const onCancel = () => finish(false);
     ok.addEventListener("click", onOk);
-    document.getElementById("confirmCancel").addEventListener("click", onCancel);
+    cancel.addEventListener("click", onCancel);
     dlg.addEventListener("close", () => finish(false), { once: true });
     dlg.showModal();
   });
