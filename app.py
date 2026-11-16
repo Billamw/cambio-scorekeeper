@@ -154,6 +154,29 @@ class RoundIn(BaseModel):
     scores: dict[str, int]
 
 
+class SyncPlayerIn(BaseModel):
+    id: str
+    name: str
+
+
+class SyncRoundIn(BaseModel):
+    id: Optional[str] = None
+    scores: dict[str, int]
+
+
+class SyncGameIn(BaseModel):
+    id: str
+    name: str
+    created_at: Optional[str] = None
+    roster: list[str] = []
+    rounds: list[SyncRoundIn] = []
+
+
+class SyncIn(BaseModel):
+    players: list[SyncPlayerIn] = []
+    games: list[SyncGameIn] = []
+
+
 # ---------- app ----------
 
 app = FastAPI(title="Cambio scorekeeper")
@@ -303,6 +326,54 @@ def delete_round(gid: str, rid: str):
             raise HTTPException(404, "round not found")
         save(data)
         return {"ok": True}
+
+
+@app.post("/api/sync")
+def sync(body: SyncIn):
+    """Upload an offline queue: upsert whole games by id.
+
+    Single-writer app (one phone at the table), so a full-state replace of a
+    dirty game is safe; client-generated ids are accepted for players, games
+    and rounds created while offline.
+    """
+    with LOCK:
+        data = load()
+        for p in body.players:
+            if any(x["id"] == p.id for x in data["players"]):
+                continue
+            name = _clean_name(p.name)
+            if _name_taken(data, name):
+                raise HTTPException(409, f"player name '{name}' is already taken")
+            data["players"].append({"id": p.id, "name": name})
+        synced = []
+        for g in body.games:
+            roster = []
+            for pid in g.roster:
+                _find_player(data, pid)
+                if pid not in roster:
+                    roster.append(pid)
+            rounds = []
+            for r in g.rounds:
+                _valid_scores(data, {"roster": roster}, r.scores)
+                rounds.append({"id": r.id or _new_id("r"), "scores": dict(r.scores)})
+            existing = next((x for x in data["games"] if x["id"] == g.id), None)
+            if existing:
+                existing["name"] = _clean_name(g.name)
+                existing["roster"] = roster
+                existing["rounds"] = rounds
+                synced.append(existing["id"])
+            else:
+                data["games"].append({
+                    "id": g.id,
+                    "name": _clean_name(g.name),
+                    "created_at": g.created_at
+                    or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "roster": roster,
+                    "rounds": rounds,
+                })
+                synced.append(g.id)
+        save(data)
+        return {"synced": synced}
 
 
 # static frontend -----------------------------------------------------------

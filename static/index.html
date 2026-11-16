@@ -35,7 +35,7 @@
         Players
       </a>
     </nav>
-    <div class="bottom">Scores are saved on your server after every round.</div>
+    <button type="button" class="sync-status" data-sync data-action="sync-now" id="syncStatus"></button>
   </aside>
 
   <div class="main">
@@ -54,6 +54,7 @@
   </div>
 
   <nav class="bottombar" aria-label="Main">
+    <button type="button" class="bottombar-sync" data-sync data-action="sync-now" id="bottombarSync"></button>
     <a href="#/game" data-nav="game">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="13" height="16" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/></svg>
       Game

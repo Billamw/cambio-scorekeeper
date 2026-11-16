@@ -53,10 +53,155 @@ async function refresh() {
   try {
     state = await api("GET", "/api/state");
     loadError = null;
+    store.saveSnapshot(state);
   } catch (e) {
-    loadError = e.message;
+    if (isNetError(e)) {
+      const cached = cachedState();
+      if (cached) { state = cached; loadError = null; }
+      else loadError = "You're offline and this device has no saved data yet.";
+    } else loadError = e.message;
   }
   render();
+}
+
+// ---------- offline store + sync ----------
+// localStorage mirror so the app keeps working without internet:
+//   snapshot — last full /api/state (offline reads)
+//   dirty    — games with changes not yet on the server (full state, upserted via /api/sync)
+//   deleted  — game ids removed locally while offline
+//   players  — players created offline, not yet on the server
+const OFFLINE_KEY = "cambio-offline";
+
+function storeBlank() { return { snapshot: null, dirty: {}, deleted: [], players: [] }; }
+function storeRead() {
+  try {
+    const s = JSON.parse(localStorage.getItem(OFFLINE_KEY));
+    return s && typeof s === "object" ? { ...storeBlank(), ...s } : storeBlank();
+  } catch { return storeBlank(); }
+}
+function storeWrite(s) {
+  try { localStorage.setItem(OFFLINE_KEY, JSON.stringify(s)); } catch {}
+}
+const store = {
+  read: storeRead,
+  saveSnapshot(state) { const s = storeRead(); s.snapshot = state; storeWrite(s); },
+  // persist a locally changed game: into the dirty map AND into the snapshot (offline reads)
+  markDirty(game) {
+    const s = storeRead();
+    s.dirty[game.id] = game;
+    s.deleted = s.deleted.filter((x) => x !== game.id);
+    if (s.snapshot) {
+      const i = s.snapshot.games.findIndex((g) => g.id === game.id);
+      if (i >= 0) s.snapshot.games[i] = game; else s.snapshot.games.push(game);
+    }
+    storeWrite(s);
+  },
+  addPlayer(p) {
+    const s = storeRead();
+    if (!s.players.some((x) => x.id === p.id)) s.players.push(p);
+    if (s.snapshot && !s.snapshot.players.some((x) => x.id === p.id)) s.snapshot.players.push(p);
+    storeWrite(s);
+  },
+  deleteGame(gid) {
+    const s = storeRead();
+    if (s.dirty[gid]) delete s.dirty[gid];
+    else if (s.snapshot && s.snapshot.games.some((g) => g.id === gid)) s.deleted.push(gid);
+    if (s.snapshot) s.snapshot.games = s.snapshot.games.filter((g) => g.id !== gid);
+    storeWrite(s);
+  },
+  pendingCount() { const s = storeRead(); return Object.keys(s.dirty).length + s.deleted.length + s.players.length; },
+  clearPending() { const s = storeRead(); s.dirty = {}; s.deleted = []; s.players = []; storeWrite(s); },
+};
+
+// state as it exists on this device: last server snapshot with local changes merged in
+function cachedState() {
+  const s = storeRead();
+  if (!s.snapshot) return null;
+  const st = JSON.parse(JSON.stringify(s.snapshot));
+  for (const g of Object.values(s.dirty)) {
+    const i = st.games.findIndex((x) => x.id === g.id);
+    if (i >= 0) st.games[i] = g; else st.games.push(g);
+  }
+  st.games = st.games.filter((g) => !s.deleted.includes(g.id));
+  for (const p of s.players) if (!st.players.some((x) => x.id === p.id)) st.players.push(p);
+  return st;
+}
+
+function isNetError(e) { return e instanceof TypeError; }
+function newId(prefix) {
+  const rnd = crypto.randomUUID
+    ? crypto.randomUUID().replace(/-/g, "")
+    : Math.random().toString(36).slice(2) + Date.now().toString(36);
+  return prefix + rnd.slice(0, 10);
+}
+function autoGameName() {
+  const d = new Date();
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  let base = `${days[d.getDay()]} ${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]}`;
+  if (d.getFullYear() !== new Date().getUTCFullYear()) base += ` ${d.getFullYear()}`;
+  return base;
+}
+
+let syncing = false;
+async function syncNow(manual = false) {
+  if (syncing || !navigator.onLine) { updateSyncIcon(); return; }
+  const s = storeRead();
+  const games = Object.values(s.dirty);
+  if (!games.length && !s.deleted.length && !s.players.length) { updateSyncIcon(); return; }
+  syncing = true;
+  try {
+    for (const gid of s.deleted) {
+      try { await api("DELETE", `/api/games/${gid}`); }
+      catch (e) { if (isNetError(e)) throw e; /* 404: never reached the server */ }
+    }
+    if (games.length || s.players.length) await api("POST", "/api/sync", { players: s.players, games });
+    store.clearPending();
+    await refresh();
+  } catch (e) {
+    if (!isNetError(e) && manual) alert(e.message);
+  } finally {
+    syncing = false;
+    updateSyncIcon();
+  }
+}
+
+// finish a mutation that was applied locally (offline, or queued on a dirty game)
+function localApplied() {
+  render();
+  if (navigator.onLine) syncNow(); else updateSyncIcon();
+}
+
+function syncSvg(kind) {
+  const cloud = '<path d="M6.5 18a3.5 3.5 0 0 1-.42-6.98A5 5 0 0 1 15.7 9.1 4.5 4.5 0 0 1 17.5 18h-11z"/>';
+  let extra = "";
+  if (kind === "synced") extra = '<path d="m9.3 13.6 2 2 3.4-3.4"/>';
+  else if (kind === "pending") extra = '<path d="M12 17v-5M10 14l2-2 2 2"/>';
+  else extra = '<line x1="4" y1="4" x2="20" y2="20"/>';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">${cloud}${extra}</svg>`;
+}
+
+function updateSyncIcon() {
+  const pending = store.pendingCount();
+  const online = navigator.onLine;
+  const kind = !online ? "offline" : pending ? "pending" : "synced";
+  const label = !online
+    ? "Offline — changes are saved on this device"
+    : pending ? `${pending} unsynced change${pending > 1 ? "s" : ""} — tap to sync`
+    : "All changes synced";
+  for (const node of document.querySelectorAll("[data-sync]")) {
+    node.dataset.syncState = kind;
+    node.innerHTML = syncSvg(kind);
+    if (node.classList.contains("sync-status")) {
+      const span = document.createElement("span");
+      span.textContent = label;
+      node.append(span);
+    } else {
+      node.title = label;
+      node.setAttribute("aria-label", label);
+      node.classList.toggle("has-pending", pending > 0 && online);
+    }
+  }
 }
 
 // ---------- helpers ----------
@@ -623,8 +768,17 @@ async function act(action, node) {
   try {
     switch (action) {
       case "new-game": {
-        const g = await api("POST", "/api/games", {});
-        await refresh();
+        let g = null;
+        if (navigator.onLine) {
+          try { g = await api("POST", "/api/games", {}); }
+          catch (e) { if (!isNetError(e)) throw e; }
+        }
+        if (!g) {
+          g = { id: newId("g"), name: autoGameName(), created_at: new Date().toISOString(), roster: [], rounds: [] };
+          state.games.push(g);
+          store.markDirty(g);
+          localApplied();
+        } else await refresh();
         location.hash = `#/game/${g.id}`;
         break;
       }
@@ -647,8 +801,13 @@ async function act(action, node) {
         inp.addEventListener("keydown", async (e) => {
           if (e.key === "Enter") {
             const name = inp.value.trim();
-            if (name && name !== game.name) await api("PATCH", `/api/games/${game.id}`, { name });
-            await refresh();
+            let pushed = false;
+            if (name && name !== game.name && navigator.onLine && !storeRead().dirty[game.id]) {
+              try { await api("PATCH", `/api/games/${game.id}`, { name }); pushed = true; }
+              catch (err) { if (!isNetError(err)) { alert(err.message); return; } }
+            }
+            if (name && name !== game.name && !pushed) { game.name = name; store.markDirty(game); }
+            if (pushed) await refresh(); else localApplied();
           }
           if (e.key === "Escape") await refresh();
         });
@@ -659,9 +818,15 @@ async function act(action, node) {
         if (!game) return;
         const ok = await confirmDialog("Delete game?", `${game.name} — ${game.rounds.length} rounds will be removed from the stats.`);
         if (!ok) return;
-        await api("DELETE", `/api/games/${game.id}`);
+        let pushed = false;
+        if (navigator.onLine && !storeRead().dirty[game.id]) {
+          try { await api("DELETE", `/api/games/${game.id}`); pushed = true; }
+          catch (e) { if (!isNetError(e)) throw e; }
+        }
+        state.games = state.games.filter((g) => g.id !== game.id);
+        store.deleteGame(game.id);
         location.hash = "#/game";
-        await refresh();
+        if (pushed) await refresh(); else localApplied();
         break;
       }
       case "toggle-player-menu": {
@@ -690,9 +855,14 @@ async function act(action, node) {
       case "pick-player": {
         const game = gameById(route.gameId);
         if (!game) return;
-        await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, id] });
+        let pushed = false;
+        if (navigator.onLine && !storeRead().dirty[game.id]) {
+          try { await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, id] }); pushed = true; }
+          catch (e) { if (!isNetError(e)) throw e; }
+        }
+        if (!pushed && !game.roster.includes(id)) game.roster.push(id);
         closePlayerMenu();
-        await refresh();
+        if (pushed) await refresh(); else { store.markDirty(game); localApplied(); }
         break;
       }
       case "menu-new-player": {
@@ -707,10 +877,20 @@ async function act(action, node) {
         inp.addEventListener("keydown", async (e) => {
           if (e.key === "Enter" && inp.value.trim()) {
             try {
-              const p = await api("POST", "/api/players", { name: inp.value.trim() });
-              await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, p.id] });
+              let p = null;
+              if (navigator.onLine) {
+                try { p = await api("POST", "/api/players", { name: inp.value.trim() }); }
+                catch (err) { if (!isNetError(err)) throw err; }
+              }
+              if (!p) { p = { id: newId("p"), name: inp.value.trim() }; state.players.push(p); store.addPlayer(p); }
+              let pushed = false;
+              if (navigator.onLine && !storeRead().dirty[game.id]) {
+                try { await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, p.id] }); pushed = true; }
+                catch (err) { if (!isNetError(err)) throw err; }
+              }
+              if (!pushed && !game.roster.includes(p.id)) game.roster.push(p.id);
               closePlayerMenu();
-              await refresh();
+              if (pushed) await refresh(); else { store.markDirty(game); localApplied(); }
             } catch (err) { alert(err.message); }
           }
           if (e.key === "Escape") closePlayerMenu();
@@ -720,8 +900,13 @@ async function act(action, node) {
       case "remove-from-roster": {
         const game = gameById(node.dataset.game || route.gameId);
         if (!game) return;
-        await api("PATCH", `/api/games/${game.id}`, { roster: game.roster.filter((x) => x !== id) });
-        await refresh();
+        let pushed = false;
+        if (navigator.onLine && !storeRead().dirty[game.id]) {
+          try { await api("PATCH", `/api/games/${game.id}`, { roster: game.roster.filter((x) => x !== id) }); pushed = true; }
+          catch (e) { if (!isNetError(e)) throw e; }
+        }
+        if (!pushed) game.roster = game.roster.filter((x) => x !== id);
+        if (pushed) await refresh(); else { store.markDirty(game); localApplied(); }
         break;
       }
       case "cancel-add": {
@@ -742,9 +927,15 @@ async function act(action, node) {
       case "delete-round": {
         const ok = await confirmDialog("Delete round?", `Round ${editingRoundIndex(id) + 1} will be removed and the stats recomputed.`);
         if (!ok) return;
+        const game = gameById(route.gameId);
+        let pushed = false;
+        if (navigator.onLine && !storeRead().dirty[game.id]) {
+          try { await api("DELETE", `/api/games/${route.gameId}/rounds/${id}`); pushed = true; }
+          catch (e) { if (!isNetError(e)) throw e; }
+        }
         editingRoundId = null;
-        await api("DELETE", `/api/games/${route.gameId}/rounds/${id}`);
-        await refresh();
+        if (!pushed) game.rounds = game.rounds.filter((r) => r.id !== id);
+        if (pushed) await refresh(); else { store.markDirty(game); localApplied(); }
         break;
       }
       case "add-round":
@@ -754,16 +945,25 @@ async function act(action, node) {
         catch (e) { showEntryError(e.message); return; }
         if (invalid) { showEntryError(invalid); return; }
         const game = gameById(route.gameId);
-        try {
-          if (action === "add-round") await api("POST", `/api/games/${game.id}/rounds`, { scores });
-          else await api("PATCH", `/api/games/${game.id}/rounds/${editingRoundId}`, { scores });
-        } catch (e) { showEntryError(e.message); return; }
+        let pushed = false;
+        if (navigator.onLine && !storeRead().dirty[game.id]) {
+          try {
+            if (action === "add-round") await api("POST", `/api/games/${game.id}/rounds`, { scores });
+            else await api("PATCH", `/api/games/${game.id}/rounds/${editingRoundId}`, { scores });
+            pushed = true;
+          } catch (e) { if (!isNetError(e)) { showEntryError(e.message); return; } }
+        }
+        if (!pushed) {
+          if (action === "add-round") game.rounds.push({ id: newId("r"), scores });
+          else { const r = game.rounds.find((x) => x.id === editingRoundId); if (r) r.scores = scores; }
+          store.markDirty(game);
+        }
         editingRoundId = null;
         if (action === "add-round") {
           // focus the entry row so the next round can be scored immediately
           pendingFocusFirstInput = true;
         }
-        await refresh();
+        if (pushed) await refresh(); else localApplied();
         break;
       }
       case "rename-player":
@@ -793,9 +993,14 @@ async function act(action, node) {
       case "save-new-player": {
         const inp = document.querySelector(".player-row .rename-input");
         if (inp && inp.value.trim()) {
-          await api("POST", "/api/players", { name: inp.value.trim() });
+          let pushed = false;
+          if (navigator.onLine) {
+            try { await api("POST", "/api/players", { name: inp.value.trim() }); pushed = true; }
+            catch (e) { if (!isNetError(e)) throw e; }
+          }
+          if (!pushed) { const p = { id: newId("p"), name: inp.value.trim() }; state.players.push(p); store.addPlayer(p); }
           addingPlayer = false;
-          await refresh();
+          if (pushed) await refresh(); else localApplied();
         }
         break;
       }
@@ -818,7 +1023,7 @@ async function act(action, node) {
       }
     }
   } catch (e) {
-    alert(e.message);
+    alert(isNetError(e) ? "You're offline — that action needs a connection." : e.message);
   }
 }
 
@@ -888,6 +1093,7 @@ function render() {
   if (route.view === "game") renderGameView();
   else if (route.view === "stats") renderStatsView();
   else renderPlayersView();
+  updateSyncIcon();
 
   if (pendingFocusFirstInput) {
     pendingFocusFirstInput = false;
@@ -918,7 +1124,15 @@ window.addEventListener("hashchange", () => {
   render();
 });
 
-refresh();
+(async () => {
+  await refresh();
+  syncNow(); // flush anything left over from a previous session
+})();
+
+// ---------- offline reconnect ----------
+window.addEventListener("online", () => { refresh().then(() => syncNow()); });
+window.addEventListener("offline", updateSyncIcon);
+setInterval(() => { if (navigator.onLine && store.pendingCount()) syncNow(); }, 30000);
 
 // ---------- PWA service worker ----------
 if ("serviceWorker" in navigator) {
