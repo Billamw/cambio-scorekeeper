@@ -11,17 +11,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?{{ASSET_VERSION}}">
 </head>
 <body>
 <div class="app">
 
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">
-        <img class="bm-dark" src="/icons/cambio-logo_white.svg" alt="">
-        <img class="bm-light" src="/icons/cambio-logo_black.svg" alt="">
-      </span>
+      <span class="brand-mark" aria-hidden="true"><img id="brandLogo" src="/icons/cambio-logo_white.svg" alt=""></span>
       <span class="brand-name">Cambio</span>
     </div>
     <nav aria-label="Main">
@@ -82,6 +79,6 @@
   </div>
 </dialog>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?{{ASSET_VERSION}}"></script>
 </body>
 </html>

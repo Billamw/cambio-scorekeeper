@@ -66,6 +66,8 @@ function currentTheme() { return document.documentElement.dataset.theme || "dark
 function syncThemeColor() {
   const m = document.querySelector('meta[name="theme-color"]');
   if (m) m.setAttribute("content", getComputedStyle(document.body).backgroundColor);
+  const b = document.getElementById("brandLogo");
+  if (b) b.src = currentTheme() === "light" ? "/icons/cambio-logo_black.svg" : "/icons/cambio-logo_white.svg";
 }
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;

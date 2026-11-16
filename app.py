@@ -9,6 +9,7 @@ A round cell is a player_id -> integer score. Absent players are simply missing 
 Single writer (one phone on the LAN); every mutation is an atomic rewrite (tmp + rename).
 """
 
+import hashlib
 import json
 import os
 import re
@@ -21,7 +22,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, Field
 
 DATA_DIR = Path(os.environ.get("CAMBIO_DATA", str(Path(__file__).parent / "data")))
@@ -309,9 +310,18 @@ def delete_round(gid: str, rid: str):
 STATIC_DIR = Path(__file__).parent / "static"
 
 
+def _asset_version() -> str:
+    h = hashlib.sha256()
+    for name in ("app.js", "style.css"):
+        h.update((STATIC_DIR / name).read_bytes())
+    return h.hexdigest()[:10]
+
+
 @app.get("/")
 def index():
-    return FileResponse(STATIC_DIR / "index.html")
+    # version-bust asset URLs so clients never keep stale CSS/JS after a deploy
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return HTMLResponse(html.replace("{{ASSET_VERSION}}", _asset_version()))
 
 
 app.mount("/static", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).StaticFiles(directory=STATIC_DIR), name="static")
