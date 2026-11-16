@@ -6,14 +6,18 @@ const SUITS = ["spade", "heart", "diamond", "club"]; // stable per player id
 let state = { players: [], games: [] };
 let route = parseHash();
 let editingRoundId = null;
+let addingRound = false;
 let renamingPlayerId = null;
 let statsSort = { key: "mean", dir: 1 };
 let pendingFocusFirstInput = false;
 let loadError = null;
 
 // ---------- tiny DOM helper ----------
+const SVG_TAGS = new Set(["svg", "path", "circle", "line", "rect", "g", "polyline", "polygon", "ellipse", "text", "defs", "clipPath"]);
 function el(tag, attrs = {}, ...children) {
-  const node = document.createElement(tag);
+  const node = SVG_TAGS.has(tag)
+    ? document.createElementNS("http://www.w3.org/2000/svg", tag)
+    : document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
     if (k === "class") node.className = v;
     else if (k === "dataset") Object.assign(node.dataset, v);
@@ -53,6 +57,25 @@ async function refresh() {
 }
 
 // ---------- helpers ----------
+// ---------- theme ----------
+const THEME_KEY = "cambio-theme";
+function currentTheme() { return document.documentElement.dataset.theme || "dark"; }
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+}
+function toggleTheme() {
+  applyTheme(currentTheme() === "dark" ? "light" : "dark");
+  render();
+}
+try {
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
+    let saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (err) {}
+    if (!saved) document.documentElement.dataset.theme = e.matches ? "light" : "dark";
+  });
+} catch (e) {}
+
 function hashId(id) {
   let h = 5381;
   for (const c of id) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0;
@@ -149,6 +172,12 @@ function renderChrome() {
   } else if (route.view === "players") scope = `${state.players.length} registered`;
   if (scope) sub.textContent = scope;
 
+  const ta = document.getElementById("topbarActions");
+  if (ta) {
+    const dark = currentTheme() === "dark";
+    ta.replaceChildren(iconBtn("toggle-theme", dark ? "Switch to light mode" : "Switch to dark mode", dark ? sunSvg() : moonSvg()));
+  }
+
   for (const a of document.querySelectorAll("[data-nav]")) {
     if (route.view === a.dataset.nav) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
@@ -220,6 +249,7 @@ function renderGame(host, game) {
         el("h1", { id: "gameTitle" }, game.name),
         el("div", { class: "sub" }, `${fmtDate(game.created_at)} · ${roster.length} players · ${game.rounds.length} rounds`)),
       el("div", { style: "display:flex;gap:4px" },
+        roster.length ? iconBtn("new-round", "Add round", plusCircleSvg()) : null,
         iconBtn("rename-game", "Rename game", pencilSvg()),
         iconBtn("delete-game", "Delete game", trashSvg())),
     ),
@@ -238,7 +268,7 @@ function renderGame(host, game) {
     const rosterEl = el("div", { class: "roster" });
     for (const p of roster) rosterEl.append(playerCard(p, game));
     const addWrap = el("div", { style: "position:relative;display:inline-block" });
-    addWrap.append(el("button", { class: "add-player-card", dataset: { action: "toggle-player-menu" }, "aria-label": "Add player" }, "+"));
+    addWrap.append(el("button", { class: "add-player-card", dataset: { action: "toggle-player-menu" }, "aria-label": "Add player" }, userPlusSvg()));
     rosterEl.append(addWrap);
     rosterPanel.append(rosterEl);
   }
@@ -251,10 +281,13 @@ function renderGame(host, game) {
   );
   if (!roster.length) {
     roundsPanel.append(el("div", { class: "empty" }, "Add players first, then score the rounds."));
+  } else if (!game.rounds.length && !addingRound) {
+    roundsPanel.append(el("div", { class: "empty" }, "No rounds yet. Tap the + next to the game name to score the first round."));
   } else {
     const table = el("table", { class: "round-table" });
     const headRow = el("tr", {}, el("th", { class: "round-no" }, ""));
     for (const p of roster) headRow.append(el("th", {}, el("span", { class: "th-suit" }, suitSvg(suitOf(p))), p.name));
+    headRow.append(el("th", { class: "round-edit" }));
     table.append(el("thead", {}, headRow));
 
     const tbody = el("tbody");
@@ -270,30 +303,32 @@ function renderGame(host, game) {
           if (v === undefined) tr.append(el("td", { class: "absent num" }, "\u2013"));
           else tr.append(el("td", { class: `score num${v === min ? " winner" : ""}` }, String(v)));
         }
+        tr.append(el("td", { class: "round-edit" },
+          el("button", { class: "icon-btn", dataset: { action: "edit-round", id: r.id }, "aria-label": `Edit round ${i + 1}` }, pencilSvg())));
         tbody.append(tr);
       }
     });
-    if (editingRoundId === null) tbody.append(entryRowEl(game, roster, null, game.rounds.length + 1));
+    if (addingRound && editingRoundId === null) tbody.append(entryRowEl(game, roster, null, game.rounds.length + 1));
     table.append(tbody);
 
     const wrap = el("div", { class: "grid-scroll" }, table);
     roundsPanel.append(wrap);
 
     const editing = editingRoundId !== null;
-    roundsPanel.append(
-      el("div", { class: "entry-actions" },
-        el("span", { class: "entry-hint" }, "\u2013 or blank = not in the round · tap a row to correct it"),
-        el("div", { style: "display:flex;gap:8px" },
-          editing
-            ? el("button", { class: "btn danger", dataset: { action: "delete-round", id: editingRoundId } }, "Delete round")
-            : null,
-          editing
-            ? el("button", { class: "btn", dataset: { action: "cancel-edit" } }, "Cancel")
-            : null,
-          el("button", { class: "btn primary", dataset: { action: editing ? "save-round" : "add-round" } },
-            editing ? "Save changes" : "Add round")),
-      ),
-    );
+    if (editing || addingRound) {
+      roundsPanel.append(
+        el("div", { class: "entry-actions" },
+          el("span", { class: "entry-hint" }, "\u2013 or blank = not in the round"),
+          el("div", { style: "display:flex;gap:8px" },
+            editing
+              ? el("button", { class: "btn danger", dataset: { action: "delete-round", id: editingRoundId } }, "Delete round")
+              : null,
+            el("button", { class: "btn", dataset: { action: editing ? "cancel-edit" : "cancel-add" } }, "Cancel"),
+            el("button", { class: "btn primary", dataset: { action: editing ? "save-round" : "add-round" } },
+              editing ? "Save changes" : "Add round")),
+        ),
+      );
+    }
   }
   host.append(roundsPanel);
 
@@ -540,6 +575,26 @@ function trashSvg() {
   return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
     el("path", { d: "M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m3 0l-.8 12.1a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 7" }));
 }
+function sunSvg() {
+  return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
+    el("circle", { cx: "12", cy: "12", r: "4" }),
+    el("path", { d: "M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" }));
+}
+function moonSvg() {
+  return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
+    el("path", { d: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z" }));
+}
+function plusCircleSvg() {
+  return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
+    el("circle", { cx: "12", cy: "12", r: "9" }),
+    el("path", { d: "M12 8v8M8 12h8" }));
+}
+function userPlusSvg() {
+  return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
+    el("path", { d: "M15 20v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" }),
+    el("circle", { cx: "8", cy: "7", r: "4" }),
+    el("path", { d: "M19 8v6M22 11h-6" }));
+}
 function checkSvg() {
   return el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "aria-hidden": "true" },
     el("path", { d: "M5 13l4 4L19 7" }));
@@ -590,19 +645,28 @@ async function act(action, node) {
         closePlayerMenu();
         const game = gameById(route.gameId);
         if (!game) return;
-        const anchor = node.closest("[style*='relative']") || node.parentElement;
         const menu = el("div", { class: "player-menu" });
         const candidates = state.players.filter((p) => !game.roster.includes(p.id));
         for (const p of candidates) {
           menu.append(el("button", { class: "menu-item", dataset: { action: "pick-player", id: p.id } },
             el("span", { class: "suit" }, suitSvg(suitOf(p))), p.name));
         }
-        const newWrap = el("div", {});
         menu.append(el("button", { class: "menu-item menu-new", dataset: { action: "menu-new-player" } }, "+ Add new player"));
-        anchor.append(menu);
-        const close = () => { closePlayerMenu(); document.removeEventListener("click", onDoc); };
+        document.body.append(menu);
+        // float near the tapped control, clamped to the viewport; fixed positioning
+        // works from any anchor (the empty-state button has no positioned parent)
+        const br = node.getBoundingClientRect();
+        const mw = menu.offsetWidth || 240;
+        const mh = menu.offsetHeight;
+        let left = Math.min(Math.max(8, br.left), Math.max(8, innerWidth - mw - 8));
+        let top = br.bottom + 6;
+        if (top + mh > innerHeight - 8) top = Math.max(8, br.top - 6 - mh); // flip above
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
+        const close = () => { closePlayerMenu(); document.removeEventListener("click", onDoc); document.removeEventListener("keydown", onKey); };
         const onDoc = (e) => { if (!menu.contains(e.target)) close(); };
-        setTimeout(() => document.addEventListener("click", onDoc), 0);
+        const onKey = (e) => { if (e.key === "Escape") close(); };
+        setTimeout(() => { document.addEventListener("click", onDoc); document.addEventListener("keydown", onKey); }, 0);
         break;
       }
       case "pick-player": {
@@ -642,12 +706,21 @@ async function act(action, node) {
         await refresh();
         break;
       }
+      case "new-round":
+        addingRound = true;
+        render();
+        break;
+      case "cancel-add":
+        addingRound = false;
+        render();
+        break;
       case "edit-round":
         editingRoundId = id;
         render();
         break;
       case "cancel-edit":
         editingRoundId = null;
+        addingRound = false;
         render();
         break;
       case "delete-round": {
@@ -670,7 +743,7 @@ async function act(action, node) {
           else await api("PATCH", `/api/games/${game.id}/rounds/${editingRoundId}`, { scores });
         } catch (e) { showEntryError(e.message); return; }
         editingRoundId = null;
-        pendingFocusFirstInput = true;
+        addingRound = false;
         await refresh();
         break;
       }
@@ -707,6 +780,9 @@ async function act(action, node) {
         }
         break;
       }
+      case "toggle-theme":
+        toggleTheme();
+        break;
       case "stats-sort": {
         const key = node.dataset.key;
         if (statsSort.key === key) statsSort.dir *= -1;
@@ -794,6 +870,7 @@ document.addEventListener("keydown", (e) => {
 window.addEventListener("hashchange", () => {
   route = parseHash();
   editingRoundId = null;
+  addingRound = false;
   renamingPlayerId = null;
   render();
 });
