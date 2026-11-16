@@ -1,17 +1,17 @@
 # Graph Report - cambio-scorekeeper  (2026-11-16)
 
 ## Corpus Check
-- 5 files · ~9,921 words
+- 5 files · ~9,968 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
 
 ## Summary
-- 112 nodes · 274 edges · 14 communities (12 shown, 2 thin omitted)
+- 113 nodes · 278 edges · 14 communities (12 shown, 2 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 1 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `14c8ebcd`
+- Built from commit: `0d38e6c6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -32,10 +32,10 @@
 - renderGameView
 
 ## God Nodes (most connected - your core abstractions)
-1. `el()` - 21 edges
-2. `act()` - 16 edges
-3. `renderGame()` - 15 edges
-4. `renderPlayersView()` - 15 edges
+1. `el()` - 22 edges
+2. `renderGame()` - 15 edges
+3. `renderPlayersView()` - 15 edges
+4. `act()` - 15 edges
 5. `load()` - 13 edges
 6. `save()` - 13 edges
 7. `render()` - 10 edges
@@ -65,8 +65,8 @@ Cohesion: 0.18
 Nodes (11): gameRow(), hashId(), latestGame(), renderHome(), route, STAT_COLS, state, statsSort (+3 more)
 
 ### Community 1 - "el"
-Cohesion: 0.27
-Nodes (19): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fmtMean(), iconBtn(), initialsOf() (+11 more)
+Cohesion: 0.26
+Nodes (20): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fillPlayerMenu(), fmtMean(), iconBtn() (+12 more)
 
 ### Community 3 - "cambio"
 Cohesion: 0.22
@@ -115,7 +115,7 @@ Nodes (3): editingRoundIndex(), gameById(), renderGameView()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `el()` connect `el` to `app.js`, `renderChrome`, `act`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+  _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **Why does `backup()` connect `backup` to `app.py`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Why does `_startup()` connect `backup` to `app.py`?**

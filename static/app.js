@@ -680,12 +680,7 @@ async function act(action, node) {
         const game = gameById(route.gameId);
         if (!game) return;
         const menu = el("div", { class: "player-menu" });
-        const candidates = state.players.filter((p) => !game.roster.includes(p.id));
-        for (const p of candidates) {
-          menu.append(el("button", { class: "menu-item", dataset: { action: "pick-player", id: p.id } },
-            el("span", { class: "suit" }, suitSvg(suitOf(p))), p.name));
-        }
-        menu.append(el("button", { class: "menu-item menu-new", dataset: { action: "menu-new-player" } }, "+ Add new player"));
+        fillPlayerMenu(menu);
         document.body.append(menu);
         // float near the tapped control, clamped to the viewport; fixed positioning
         // works from any anchor (the empty-state button has no positioned parent)
@@ -707,8 +702,10 @@ async function act(action, node) {
         const game = gameById(route.gameId);
         if (!game) return;
         await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, id] });
-        closePlayerMenu();
         await refresh();
+        // keep the menu open so several players can be added back-to-back at the table
+        const menu = document.querySelector(".player-menu");
+        if (menu) fillPlayerMenu(menu);
         break;
       }
       case "menu-new-player": {
@@ -844,6 +841,19 @@ function editingRoundIndex(rid) {
 }
 
 let playerMenuCleanup = null;
+
+// (re)build the candidate list inside a roster menu, keeping position + listeners
+function fillPlayerMenu(menu) {
+  const game = gameById(route.gameId);
+  if (!game) return;
+  menu.replaceChildren();
+  const candidates = state.players.filter((p) => !game.roster.includes(p.id));
+  for (const p of candidates) {
+    menu.append(el("button", { class: "menu-item", dataset: { action: "pick-player", id: p.id } },
+      el("span", { class: "suit" }, suitSvg(suitOf(p))), p.name));
+  }
+  menu.append(el("button", { class: "menu-item menu-new", dataset: { action: "menu-new-player" } }, "+ Add new player"));
+}
 
 function closePlayerMenu() {
   document.querySelectorAll(".player-menu").forEach((m) => m.remove());
