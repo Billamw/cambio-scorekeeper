@@ -223,13 +223,6 @@ function toggleTheme() {
   applyTheme(currentTheme() === "dark" ? "light" : "dark");
   render();
 }
-try {
-  matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
-    let saved = null;
-    try { saved = localStorage.getItem(THEME_KEY); } catch (err) {}
-    if (!saved) { document.documentElement.dataset.theme = e.matches ? "light" : "dark"; syncThemeColor(); }
-  });
-} catch (e) {}
 
 // brand logo chip — theme-aware: white plate on dark backgrounds, dark plate on light
 function logoChip(cls = "suit") {
@@ -492,7 +485,6 @@ function renderGame(host, game) {
 function playerCard(p, game) {
   const roundsPlayed = game.rounds.filter((r) => r.scores[p.id] !== undefined).length;
   const card = el("div", { class: `pcard${roundsPlayed ? " has-history" : ""}`, title: `${p.name} · ${roundsPlayed} rounds` });
-  card.append(logoChip());
   card.append(el("span", { class: "initials" }, initialsOf(p.name)));
   if (!roundsPlayed) card.append(el("button", { class: "remove", dataset: { action: "remove-from-roster", id: p.id, game: game.id }, "aria-label": `Remove ${p.name}` }, "\u00d7"));
   return card;
@@ -677,7 +669,7 @@ function renderPlayersView() {
     for (const p of state.players) {
       const s = stats[p.id];
       const row = el("div", { class: "player-row" });
-      row.append(el("div", { class: "pavatar" }, logoChip(), initialsOf(p.name)));
+      row.append(el("div", { class: "pavatar" }, initialsOf(p.name)));
       if (renamingPlayerId === p.id) {
         const inp = el("input", { class: "rename-input", value: p.name, maxlength: 30, "aria-label": `Rename ${p.name}` });
         inp.addEventListener("keydown", (e) => {

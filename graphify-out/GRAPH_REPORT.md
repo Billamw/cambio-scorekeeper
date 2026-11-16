@@ -1,17 +1,17 @@
 # Graph Report - cambio-scorekeeper  (2026-11-16)
 
 ## Corpus Check
-- 7 files · ~15,211 words
+- 7 files · ~15,171 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 3, .css 1)
 
 ## Summary
-- 146 nodes · 339 edges · 14 communities (11 shown, 3 thin omitted)
+- 146 nodes · 337 edges · 16 communities (13 shown, 3 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a9c9b145`
+- Built from commit: `aef15b73`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -20,7 +20,7 @@
 - el
 - app.py
 - cambio
-- act
+- render
 - create_game
 - save
 - manifest.json
@@ -30,42 +30,44 @@
 - sw.js
 - backup
 - edit_round
+- gameById
+- renderChrome
 
 ## God Nodes (most connected - your core abstractions)
 1. `el()` - 22 edges
 2. `act()` - 20 edges
-3. `load()` - 14 edges
-4. `save()` - 14 edges
-5. `renderGame()` - 14 edges
-6. `renderPlayersView()` - 14 edges
+3. `renderGame()` - 14 edges
+4. `load()` - 14 edges
+5. `save()` - 14 edges
+6. `renderPlayersView()` - 13 edges
 7. `render()` - 12 edges
 8. `sync()` - 11 edges
 9. `refresh()` - 10 edges
 10. `create_game()` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `add_round()` --calls--> `load()`  [EXTRACTED]
-  app.py → app.py  _Bridges community 6 → community 8_
-- `create_game()` --calls--> `load()`  [EXTRACTED]
-  app.py → app.py  _Bridges community 6 → community 5_
-- `create_player()` --calls--> `load()`  [EXTRACTED]
-  app.py → app.py  _Bridges community 6 → community 9_
-- `edit_round()` --calls--> `load()`  [EXTRACTED]
-  app.py → app.py  _Bridges community 6 → community 13_
-- `get_state()` --calls--> `load()`  [EXTRACTED]
-  app.py → app.py  _Bridges community 6 → community 2_
+- `act()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 0_
+- `gameRow()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 14_
+- `iconBtn()` --calls--> `el()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 1 → community 15_
+- `act()` --calls--> `api()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 4 → community 0_
+- `renderPlayersView()` --calls--> `api()`  [EXTRACTED]
+  static/app.js → static/app.js  _Bridges community 4 → community 1_
 
 ## Import Cycles
 - None detected.
 
-## Communities (14 total, 3 thin omitted)
+## Communities (16 total, 3 thin omitted)
 
 ### Community 0 - "app.js"
-Cohesion: 0.14
-Nodes (18): editingRoundIndex(), fmtDate(), gameById(), gameRow(), iconBtn(), latestGame(), moonSvg(), renderChrome() (+10 more)
+Cohesion: 0.15
+Nodes (17): act(), autoGameName(), cachedState(), closePlayerMenu(), confirmDialog(), newId(), readEntryRow(), route (+9 more)
 
 ### Community 1 - "el"
-Cohesion: 0.24
+Cohesion: 0.23
 Nodes (19): checkSvg(), computeStats(), el(), entryRowEl(), errorNote(), fillPlayerMenu(), fmtMean(), initialsOf() (+11 more)
 
 ### Community 2 - "app.py"
@@ -76,9 +78,9 @@ Nodes (4): _asset_version(), get_state(), index(), service_worker()
 Cohesion: 0.22
 Nodes (8): build, container_name, environment, ports, restart, volumes, services, cambio
 
-### Community 4 - "act"
-Cohesion: 0.17
-Nodes (20): act(), api(), autoGameName(), cachedState(), closePlayerMenu(), confirmDialog(), isNetError(), localApplied() (+12 more)
+### Community 4 - "render"
+Cohesion: 0.36
+Nodes (10): api(), isNetError(), localApplied(), refresh(), render(), renderFooter(), saveRename(), syncNow() (+2 more)
 
 ### Community 5 - "create_game"
 Cohesion: 0.29
@@ -104,17 +106,25 @@ Nodes (5): _clean_name(), create_player(), _name_taken(), PlayerIn, rename_playe
 Cohesion: 0.67
 Nodes (4): applyTheme(), currentTheme(), syncThemeColor(), toggleTheme()
 
+### Community 14 - "gameById"
+Cohesion: 0.33
+Nodes (6): editingRoundIndex(), gameById(), gameRow(), latestGame(), renderGameView(), renderHome()
+
+### Community 15 - "renderChrome"
+Cohesion: 0.40
+Nodes (5): fmtDate(), iconBtn(), moonSvg(), renderChrome(), sunSvg()
+
 ## Knowledge Gaps
 - **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `el()` connect `el` to `app.js`, `act`?**
+- **Why does `el()` connect `el` to `app.js`, `gameById`, `renderChrome`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
 - **Should `app.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14736842105263157 - nodes in this community are weakly interconnected._
 - **Why does `sync()` connect `sync` to `create_player`, `app.py`, `save`?**
   _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **Why does `act()` connect `act` to `app.js`, `el`, `toggleTheme`?**
+- **Why does `act()` connect `app.js` to `el`, `toggleTheme`, `render`, `gameById`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
