@@ -316,3 +316,9 @@ def index():
 
 app.mount("/static", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).StaticFiles(directory=STATIC_DIR), name="static")
 app.mount("/icons", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).StaticFiles(directory=Path(__file__).parent / "icons"), name="icons")
+
+
+@app.get("/sw.js")
+def service_worker():
+    # served from the root so its default scope covers the whole app
+    return FileResponse(STATIC_DIR / "sw.js", headers={"Service-Worker-Allowed": "/"})

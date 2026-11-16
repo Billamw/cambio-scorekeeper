@@ -5,6 +5,9 @@
   <script>(function(){try{var t=localStorage.getItem("cambio-theme");if(!t){t=window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}document.documentElement.dataset.theme=t;}catch(e){}})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cambio — scorekeeper</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" type="image/svg+xml" href="/icons/cambio-logo_white.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,7 +18,10 @@
 
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3C9.6 7.8 5 10 5 13.6a3.8 3.8 0 0 0 7.4 1.5c-.1 1.7-.8 3.2-1.9 4.3h3c-1.1-1.1-1.8-2.6-1.9-4.3a3.8 3.8 0 0 0 7.4-1.5C19 10 14.4 7.8 12 3z"/></svg></span>
+      <span class="brand-mark" aria-hidden="true">
+        <img class="bm-dark" src="/icons/cambio-logo_white.svg" alt="">
+        <img class="bm-light" src="/icons/cambio-logo_black.svg" alt="">
+      </span>
       <span class="brand-name">Cambio</span>
     </div>
     <nav aria-label="Main">

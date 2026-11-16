@@ -3,6 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY app.py .
 COPY static/ ./static/
+COPY icons/ ./icons/
 RUN pip install --no-cache-dir fastapi uvicorn
 
 ENV CAMBIO_DATA=/data

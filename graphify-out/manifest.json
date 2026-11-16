@@ -14,9 +14,9 @@
     "ast_empty": true
   },
   "app.py": {
-    "mtime": 1794832505.4680388,
-    "seen": 1794833851.5666506,
-    "ast_hash": "34eb90cde0277e8fe10eb5468e78b4bc",
+    "mtime": 1794834393.5124483,
+    "seen": 1794834579.0814195,
+    "ast_hash": "6fff42ea2b68601c128d560c2d6ea327",
     "semantic_hash": ""
   },
   "docker-compose.yml": {
@@ -26,9 +26,9 @@
     "semantic_hash": "6005a0bad5699cef0fa7959c1a531405"
   },
   "static/app.js": {
-    "mtime": 1794832506.1290085,
-    "seen": 1794833851.566656,
-    "ast_hash": "2f1fefb1bbacc2645893107175155f3d",
+    "mtime": 1794834393.531407,
+    "seen": 1794834579.0814254,
+    "ast_hash": "59689ac4a6a6e581530562e35b66b13d",
     "semantic_hash": ""
   },
   "README.md": {
@@ -38,9 +38,9 @@
     "semantic_hash": ""
   },
   "static/index.html": {
-    "mtime": 1794792761.7231922,
-    "seen": 1794797340.1366875,
-    "ast_hash": "9b4f3d65f1925b6430fc259e8142ee83",
+    "mtime": 1794834393.5397007,
+    "seen": 1794834579.0814357,
+    "ast_hash": "3728d038308b7f3c2a3e55f3d6e2a5e3",
     "semantic_hash": ""
   },
   ".taste-skill/inspect/desktop-fold.jpg": {
@@ -113,6 +113,18 @@
     "mtime": 1794831401.5093973,
     "seen": 1794833851.5666835,
     "ast_hash": "bba43bc9eb24f3dc0a33294f63a68403",
+    "semantic_hash": ""
+  },
+  "static/manifest.json": {
+    "mtime": 1794834393.5399942,
+    "seen": 1794834579.0814283,
+    "ast_hash": "3828bc25ee8273da66345f8c9eebb746",
+    "semantic_hash": ""
+  },
+  "static/sw.js": {
+    "mtime": 1794834118.639238,
+    "seen": 1794834579.0814307,
+    "ast_hash": "3d53c9a43d9e47754654e25014add217",
     "semantic_hash": ""
   }
 }

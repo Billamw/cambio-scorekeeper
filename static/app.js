@@ -63,9 +63,14 @@ async function refresh() {
 // ---------- theme ----------
 const THEME_KEY = "cambio-theme";
 function currentTheme() { return document.documentElement.dataset.theme || "dark"; }
+function syncThemeColor() {
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", getComputedStyle(document.body).backgroundColor);
+}
 function applyTheme(t) {
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+  syncThemeColor();
 }
 function toggleTheme() {
   applyTheme(currentTheme() === "dark" ? "light" : "dark");
@@ -75,7 +80,7 @@ try {
   matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
     let saved = null;
     try { saved = localStorage.getItem(THEME_KEY); } catch (err) {}
-    if (!saved) document.documentElement.dataset.theme = e.matches ? "light" : "dark";
+    if (!saved) { document.documentElement.dataset.theme = e.matches ? "light" : "dark"; syncThemeColor(); }
   });
 } catch (e) {}
 
@@ -912,3 +917,11 @@ window.addEventListener("hashchange", () => {
 });
 
 refresh();
+
+// ---------- PWA service worker ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+syncThemeColor();
