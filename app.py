@@ -3,7 +3,7 @@
 
 Data model (data.json):
   sessions: [{id, name}]                     # group of game nights (e.g. a trip)
-  players: [{id, name}]                      # global registry, display order
+  players: [{id, name, session_id}]          # one entry per person per session
   games:   [{id, name, created_at, session_id, roster: [player_id], rounds: [{id, scores: {player_id: int}}]}]
 
 A round cell is a player_id -> integer score. Absent players are simply missing keys.
@@ -57,6 +57,11 @@ def load() -> dict:
         for g in data["games"]:
             g.setdefault("session_id", "s-erasmus-madrid")
         save(data)
+    if any(not p.get("session_id") for p in data["players"]):
+        # players created before sessions existed: attach them to the first session
+        for p in data["players"]:
+            p.setdefault("session_id", data["sessions"][0]["id"])
+        save(data)
     return data
 
 
@@ -105,10 +110,13 @@ def _find_game(data: dict, gid: str) -> dict:
     raise HTTPException(404, "game not found")
 
 
-def _name_taken(data: dict, name: str, ignore_id: Optional[str] = None) -> bool:
+def _name_taken(data: dict, name: str, ignore_id: Optional[str] = None, session_id: Optional[str] = None) -> bool:
+    # names are unique per session — the same person can exist in two trips
     needle = name.strip().casefold()
     return any(
-        p["id"] != ignore_id and p["name"].strip().casefold() == needle
+        p["id"] != ignore_id
+        and (session_id is None or p.get("session_id") == session_id)
+        and p["name"].strip().casefold() == needle
         for p in data["players"]
     )
 
@@ -151,6 +159,7 @@ def _valid_scores(data: dict, game: dict, scores: dict) -> None:
 
 class PlayerIn(BaseModel):
     name: str = Field(min_length=1, max_length=30)
+    session_id: Optional[str] = None
 
 
 class SessionIn(BaseModel):
@@ -175,6 +184,7 @@ class RoundIn(BaseModel):
 class SyncPlayerIn(BaseModel):
     id: str
     name: str
+    session_id: Optional[str] = None
 
 
 class SyncRoundIn(BaseModel):
@@ -227,6 +237,25 @@ def create_session(body: SessionIn):
         return s
 
 
+@app.delete("/api/sessions/{sid}")
+def delete_session(sid: str):
+    """Delete a session and everything in it (its games and its players)."""
+    with LOCK:
+        data = load()
+        if len(data["sessions"]) <= 1:
+            raise HTTPException(409, "cannot delete the last session")
+        s = next((x for x in data["sessions"] if x["id"] == sid), None)
+        if s is None:
+            raise HTTPException(404, "session not found")
+        games = [g for g in data["games"] if g.get("session_id") == sid]
+        players = [p for p in data["players"] if p.get("session_id") == sid]
+        data["sessions"] = [x for x in data["sessions"] if x["id"] != sid]
+        data["games"] = [g for g in data["games"] if g.get("session_id") != sid]
+        data["players"] = [p for p in data["players"] if p.get("session_id") != sid]
+        save(data)
+        return {"ok": True, "deleted_games": len(games), "deleted_players": len(players)}
+
+
 # players -----------------------------------------------------------------
 
 @app.post("/api/players", status_code=201)
@@ -234,9 +263,12 @@ def create_player(body: PlayerIn):
     name = _clean_name(body.name)
     with LOCK:
         data = load()
-        if _name_taken(data, name):
-            raise HTTPException(409, "a player with this name already exists")
-        p = {"id": _new_id("p"), "name": name}
+        sid = body.session_id or data["sessions"][0]["id"]
+        if not any(s["id"] == sid for s in data["sessions"]):
+            raise HTTPException(404, "session not found")
+        if _name_taken(data, name, session_id=sid):
+            raise HTTPException(409, "a player with this name already exists in this session")
+        p = {"id": _new_id("p"), "name": name, "session_id": sid}
         data["players"].append(p)
         save(data)
         return p
@@ -248,8 +280,8 @@ def rename_player(pid: str, body: PlayerIn):
     with LOCK:
         data = load()
         p = _find_player(data, pid)
-        if _name_taken(data, name, ignore_id=pid):
-            raise HTTPException(409, "a player with this name already exists")
+        if _name_taken(data, name, ignore_id=pid, session_id=p.get("session_id")):
+            raise HTTPException(409, "a player with this name already exists in this session")
         p["name"] = name
         save(data)
         return p
@@ -380,9 +412,10 @@ def sync(body: SyncIn):
             if any(x["id"] == p.id for x in data["players"]):
                 continue
             name = _clean_name(p.name)
-            if _name_taken(data, name):
+            sid = next((s["id"] for s in data["sessions"] if s["id"] == p.session_id), None) or data["sessions"][0]["id"]
+            if _name_taken(data, name, session_id=sid):
                 raise HTTPException(409, f"player name '{name}' is already taken")
-            data["players"].append({"id": p.id, "name": name})
+            data["players"].append({"id": p.id, "name": name, "session_id": sid})
         synced = []
         for g in body.games:
             roster = []

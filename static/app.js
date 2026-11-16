@@ -266,6 +266,12 @@ function sessionGames() {
   return state.games.filter((g) => g.session_id === activeSessionId);
 }
 function latestGame() { const gs = sessionGames(); return gs.length ? gs[gs.length - 1] : null; }
+function activeSession() { return state.sessions.find((s) => s.id === activeSessionId) || null; }
+// Players registered in the session this device is working in.
+function sessionPlayers() {
+  if (!activeSessionId) return state.players;
+  return state.players.filter((p) => p.session_id === activeSessionId);
+}
 
 // stats scoped to a list of games: per player across all their rounds in them
 function computeStats(games) {
@@ -290,7 +296,7 @@ function computeStats(games) {
 }
 
 function parseHash() {
-  const m = location.hash.match(/^#\/(game|stats|players)(?:\/([^/]+))?$/);
+  const m = location.hash.match(/^#\/(game|stats|players|sessions)(?:\/([^/]+))?$/);
   if (!m) return { view: "game", gameId: null };
   return { view: m[1], gameId: m[2] || null };
 }
@@ -322,11 +328,14 @@ function renderChrome() {
   const sub = document.getElementById("topbarSub");
   sub.textContent = "";
   let scope = "";
+  const sessName = activeSession() ? activeSession().name : null;
   if (game) scope = `${game.rounds.length} rounds · ${fmtDate(game.created_at)}`;
   else if (route.view === "stats") {
-    const totalRounds = state.games.reduce((n, g) => n + g.rounds.length, 0);
-    scope = `${state.players.length} players · ${totalRounds} rounds all-time`;
-  } else if (route.view === "players") scope = `${state.players.length} registered`;
+    const gs = sessionGames();
+    const totalRounds = gs.reduce((n, g) => n + g.rounds.length, 0);
+    scope = `${sessionPlayers().length} players · ${totalRounds} rounds${sessName ? ` in ${sessName}` : ""}`;
+  } else if (route.view === "players") scope = `${sessionPlayers().length} in this session`;
+  else if (route.view === "sessions") scope = `${state.sessions.length} sessions · tap one to switch`;
   if (scope) sub.textContent = scope;
 
   const ta = document.getElementById("topbarActions");
@@ -339,7 +348,7 @@ function renderChrome() {
     if (route.view === a.dataset.nav) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   }
-  for (const v of ["game", "stats", "players"]) {
+  for (const v of ["game", "stats", "players", "sessions"]) {
     document.getElementById(`view-${v}`).hidden = route.view !== v;
   }
 }
@@ -354,6 +363,25 @@ function renderGameView() {
   else renderGame(host, game);
 }
 
+// Inline name input for a new session (home picker + Sessions tab).
+function newSessionInput() {
+  const inp = el("input", { class: "session-input", placeholder: "Session name…", maxlength: 30 });
+  inp.addEventListener("keydown", async (e) => {
+    if (e.key === "Escape") { addingSession = false; render(); }
+    else if (e.key === "Enter") {
+      const name = inp.value.trim();
+      if (!name) return;
+      if (!navigator.onLine) { alert("You're offline — creating a session needs a connection."); return; }
+      try {
+        const s = await api("POST", "/api/sessions", { name });
+        setActiveSession(s.id);
+        await refresh();
+      } catch (err) { alert(err.message); addingSession = false; render(); }
+    }
+  });
+  return inp;
+}
+
 // Session picker: choose which session this device works in before making games.
 function sessionPicker() {
   const row = el("div", { class: "session-picker" });
@@ -364,20 +392,7 @@ function sessionPicker() {
     }, s.name));
   }
   if (addingSession) {
-    const inp = el("input", { class: "session-input", placeholder: "Session name…", maxlength: 30 });
-    inp.addEventListener("keydown", async (e) => {
-      if (e.key === "Escape") { addingSession = false; render(); }
-      else if (e.key === "Enter") {
-        const name = inp.value.trim();
-        if (!name) return;
-        if (!navigator.onLine) { alert("You're offline — creating a session needs a connection."); return; }
-        try {
-          const s = await api("POST", "/api/sessions", { name });
-          setActiveSession(s.id);
-          await refresh();
-        } catch (err) { alert(err.message); addingSession = false; render(); }
-      }
-    });
+    const inp = newSessionInput();
     row.append(inp);
     setTimeout(() => inp.focus(), 50);
   } else {
@@ -563,6 +578,52 @@ function entryRowEl(game, roster, r, label) {
   return tr;
 }
 
+// ---------- sessions view ----------
+function renderSessionsView() {
+  const host = document.getElementById("view-sessions");
+  host.replaceChildren();
+  if (loadError) { host.append(errorNote(loadError)); return; }
+
+  host.append(el("div", { class: "title-row" },
+    el("div", {}, el("h1", {}, "Sessions"),
+      el("div", { class: "sub" }, `${state.sessions.length} session${state.sessions.length === 1 ? "" : "s"} · tap one to switch this device`)),
+    addingSession ? null : el("button", { class: "btn primary", dataset: { action: "new-session" } }, "New session")));
+
+  const panel = el("div", { class: "panel" });
+  const list = el("div", { class: "session-list" });
+  const last = state.sessions.length <= 1;
+
+  if (addingSession) {
+    const row = el("div", { class: "session-new-row" });
+    const inp = newSessionInput();
+    row.append(inp, el("button", { class: "icon-btn", dataset: { action: "cancel-new-session" }, "aria-label": "Cancel new session" }, "\u00d7"));
+    list.append(row);
+    setTimeout(() => inp.focus(), 50);
+  }
+
+  for (const s of state.sessions) {
+    const games = state.games.filter((g) => g.session_id === s.id).length;
+    const players = state.players.filter((p) => p.session_id === s.id).length;
+    const row = el("div", { class: "session-row" });
+    row.append(
+      el("div", { class: "session-row-main", dataset: { action: "select-session", id: s.id } },
+        el("div", { class: "s-name" }, s.name,
+          s.id === activeSessionId ? el("span", { class: "s-active-badge" }, "this device") : null),
+        el("div", { class: "p-meta" }, `${games} games · ${players} players`)),
+      el("button", {
+        class: "icon-btn danger", dataset: { action: "delete-session", id: s.id },
+        disabled: last ? "" : null,
+        title: last ? "The last session can't be deleted" : `Delete ${s.name} and everything in it`,
+        "aria-label": `Delete ${s.name}`,
+      }, trashSvg()));
+    list.append(row);
+  }
+  panel.append(list);
+  host.append(panel);
+  host.append(el("div", { class: "table-note", style: "margin-top:10px" },
+    "Each session keeps its own games, players and stats. Deleting one removes everything in it."));
+}
+
 // ---------- stats view ----------
 const STAT_COLS = [
   { key: "games", label: "Games" },
@@ -580,8 +641,9 @@ function renderStatsView() {
   host.replaceChildren();
   if (loadError) { host.append(errorNote(loadError)); return; }
 
-  const stats = computeStats(state.games);
-  const rows = state.players
+  const games = sessionGames();
+  const stats = computeStats(games);
+  const rows = sessionPlayers()
     .map((p) => ({ p, s: stats[p.id] }))
     .filter(({ s }) => s && s.rounds > 0)
     .map(({ p, s }) => ({
@@ -596,10 +658,11 @@ function renderStatsView() {
       worst: s.worst,
     }));
 
-  const totalRounds = state.games.reduce((n, g) => n + g.rounds.length, 0);
+  const totalRounds = games.reduce((n, g) => n + g.rounds.length, 0);
+  const sessName = activeSession() ? activeSession().name : null;
   host.append(el("div", { class: "title-row" },
     el("div", {}, el("h1", {}, "Stats"),
-      el("div", { class: "sub" }, `${state.games.length} games · ${totalRounds} rounds across all nights`)),
+      el("div", { class: "sub" }, `${games.length} games · ${totalRounds} rounds${sessName ? ` in ${sessName}` : ""}`)),
     rows.length ? el("div", { class: "seg" },
       el("button", { class: `seg-btn${statsView === "cards" ? " active" : ""}`, dataset: { action: "stats-view-cards" } }, "Cards"),
       el("button", { class: `seg-btn${statsView === "table" ? " active" : ""}`, dataset: { action: "stats-view-table" } }, "Table")) : null));
@@ -613,7 +676,7 @@ function renderStatsView() {
   // KPI strip
   const leader = rows.reduce((a, b) => (b.mean < a.mean ? b : a));
   host.append(el("div", { class: "kpis" },
-    el("div", { class: "kpi" }, el("div", { class: "kpi-label" }, "Games played"), el("div", { class: "kpi-value num" }, String(state.games.length))),
+    el("div", { class: "kpi" }, el("div", { class: "kpi-label" }, "Games played"), el("div", { class: "kpi-value num" }, String(games.length))),
     el("div", { class: "kpi" }, el("div", { class: "kpi-label" }, "Rounds scored"), el("div", { class: "kpi-value num" }, String(totalRounds))),
     el("div", { class: "kpi" }, el("div", { class: "kpi-label" }, "Lowest average"),
       el("div", { class: "kpi-value" }, leader.p.name, el("small", {}, fmtMean(leader.total, leader.rounds))))),
@@ -693,15 +756,16 @@ function renderPlayersView() {
   host.replaceChildren();
   if (loadError) { host.append(errorNote(loadError)); return; }
 
-  const stats = computeStats(state.games);
+  const players = sessionPlayers();
+  const stats = computeStats(sessionGames());
   host.append(el("div", { class: "title-row" },
     el("div", {}, el("h1", {}, "Players"),
-      el("div", { class: "sub" }, `${state.players.length} registered`)),
+      el("div", { class: "sub" }, `${players.length} in this session`)),
     addingPlayer ? null : el("button", { class: "btn primary", dataset: { action: "add-player" } }, "Add player")));
 
   const panel = el("div", { class: "panel" });
-  if (!state.players.length && !addingPlayer) {
-    panel.append(el("div", { class: "empty" }, "No players yet — add the first name at the table."));
+  if (!players.length && !addingPlayer) {
+    panel.append(el("div", { class: "empty" }, "No players in this session yet — add the first name at the table."));
   } else {
     const list = el("div");
 
@@ -712,7 +776,7 @@ function renderPlayersView() {
       inp.addEventListener("keydown", async (e) => {
         if (e.key === "Enter" && inp.value.trim()) {
           try {
-            await api("POST", "/api/players", { name: inp.value.trim() });
+            await api("POST", "/api/players", { name: inp.value.trim(), session_id: activeSessionId });
             addingPlayer = false;
             await refresh();
           } catch (err) { alert(err.message); }
@@ -724,7 +788,7 @@ function renderPlayersView() {
       list.append(row);
     }
 
-    for (const p of state.players) {
+    for (const p of players) {
       const s = stats[p.id];
       const row = el("div", { class: "player-row" });
       row.append(el("div", { class: "pavatar" }, initialsOf(p.name)));
@@ -837,12 +901,30 @@ async function act(action, node) {
         break;
       case "select-session":
         setActiveSession(id);
-        render();
+        if (route.view !== "game") location.hash = "#/game";
+        else render();
         break;
       case "new-session":
         addingSession = true;
         render();
         break;
+      case "cancel-new-session":
+        addingSession = false;
+        render();
+        break;
+      case "delete-session": {
+        const s = state.sessions.find((x) => x.id === id);
+        if (!s) return;
+        const nGames = state.games.filter((g) => g.session_id === id).length;
+        const nPlayers = state.players.filter((p) => p.session_id === id).length;
+        const ok = await confirmDialog("Delete session?",
+          `${s.name} — ${nGames} game${nGames === 1 ? "" : "s"} and ${nPlayers} player${nPlayers === 1 ? "" : "s"} will be permanently removed.`);
+        if (!ok) return;
+        await api("DELETE", `/api/sessions/${id}`);
+        if (activeSessionId === id) { try { localStorage.removeItem(SESSION_KEY); } catch {} }
+        await refresh();
+        break;
+      }
       case "rename-game": {
         const game = gameById(route.gameId);
         if (!game) return;
@@ -937,10 +1019,10 @@ async function act(action, node) {
             try {
               let p = null;
               if (navigator.onLine) {
-                try { p = await api("POST", "/api/players", { name: inp.value.trim() }); }
+                try { p = await api("POST", "/api/players", { name: inp.value.trim(), session_id: activeSessionId }); }
                 catch (err) { if (!isNetError(err)) throw err; }
               }
-              if (!p) { p = { id: newId("p"), name: inp.value.trim() }; state.players.push(p); store.addPlayer(p); }
+              if (!p) { p = { id: newId("p"), name: inp.value.trim(), session_id: activeSessionId }; state.players.push(p); store.addPlayer(p); }
               let pushed = false;
               if (navigator.onLine && !storeRead().dirty[game.id]) {
                 try { await api("PATCH", `/api/games/${game.id}`, { roster: [...game.roster, p.id] }); pushed = true; }
@@ -1053,10 +1135,10 @@ async function act(action, node) {
         if (inp && inp.value.trim()) {
           let pushed = false;
           if (navigator.onLine) {
-            try { await api("POST", "/api/players", { name: inp.value.trim() }); pushed = true; }
+            try { await api("POST", "/api/players", { name: inp.value.trim(), session_id: activeSessionId }); pushed = true; }
             catch (e) { if (!isNetError(e)) throw e; }
           }
-          if (!pushed) { const p = { id: newId("p"), name: inp.value.trim() }; state.players.push(p); store.addPlayer(p); }
+          if (!pushed) { const p = { id: newId("p"), name: inp.value.trim(), session_id: activeSessionId }; state.players.push(p); store.addPlayer(p); }
           addingPlayer = false;
           if (pushed) await refresh(); else localApplied();
         }
@@ -1097,7 +1179,7 @@ function fillPlayerMenu(menu) {
   const game = gameById(route.gameId);
   if (!game) return;
   menu.replaceChildren();
-  const candidates = state.players.filter((p) => !game.roster.includes(p.id));
+  const candidates = sessionPlayers().filter((p) => !game.roster.includes(p.id));
   for (const p of candidates) {
     menu.append(el("button", { class: "menu-item", dataset: { action: "pick-player", id: p.id } },
       logoChip(), p.name));
@@ -1141,8 +1223,9 @@ function showEntryError(msg) {
 function renderFooter() {
   const f = document.getElementById("canvasFooter");
   if (!f) return;
-  const totalRounds = state.games.reduce((n, g) => n + g.rounds.length, 0);
-  f.replaceChildren(document.createTextNode(`${state.games.length} games \u00b7 ${totalRounds} rounds`));
+  const gs = sessionGames();
+  const totalRounds = gs.reduce((n, g) => n + g.rounds.length, 0);
+  f.replaceChildren(document.createTextNode(`${gs.length} games \u00b7 ${totalRounds} rounds`));
 }
 
 function render() {
@@ -1150,6 +1233,7 @@ function render() {
   renderFooter();
   if (route.view === "game") renderGameView();
   else if (route.view === "stats") renderStatsView();
+  else if (route.view === "sessions") renderSessionsView();
   else renderPlayersView();
   updateSyncIcon();
 
