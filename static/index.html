@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cambio — scorekeeper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M12 3C9.6 7.8 5 10 5 13.6a3.8 3.8 0 0 0 7.4 1.5c-.1 1.7-.8 3.2-1.9 4.3h3c-1.1-1.1-1.8-2.6-1.9-4.3a3.8 3.8 0 0 0 7.4-1.5C19 10 14.4 7.8 12 3z"/></svg></span>
+      <span class="brand-name">Cambio</span>
+    </div>
+    <nav aria-label="Main">
+      <a class="nav-item" href="#/game" data-nav="game">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="13" height="16" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/></svg>
+        Game
+      </a>
+      <a class="nav-item" href="#/stats" data-nav="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 20v-6M10 20V8M15 20v-9M20 20V5"/></svg>
+        Stats
+      </a>
+      <a class="nav-item" href="#/players" data-nav="players">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c.8-3 3.4-4.5 6.5-4.5s5.7 1.5 6.5 4.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.4.3 4.3 1.6 5 4.4"/></svg>
+        Players
+      </a>
+    </nav>
+    <div class="bottom">Scores are saved on your server after every round.</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <span class="topbar-title" id="topbarTitle">Cambio</span>
+      <span class="topbar-sub" id="topbarSub"></span>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </header>
+
+    <main class="canvas">
+      <section class="view" id="view-game" aria-label="Game"></section>
+      <section class="view" id="view-stats" aria-label="Stats" hidden></section>
+      <section class="view" id="view-players" aria-label="Players" hidden></section>
+      <footer class="canvas-footer" id="canvasFooter"></footer>
+    </main>
+  </div>
+
+  <nav class="bottombar" aria-label="Main">
+    <a href="#/game" data-nav="game">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="13" height="16" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/></svg>
+      Game
+    </a>
+    <a href="#/stats" data-nav="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M5 20v-6M10 20V8M15 20v-9M20 20V5"/></svg>
+      Stats
+    </a>
+    <a href="#/players" data-nav="players">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c.8-3 3.4-4.5 6.5-4.5s5.7 1.5 6.5 4.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.4.3 4.3 1.6 5 4.4"/></svg>
+      Players
+    </a>
+  </nav>
+
+</div>
+
+<dialog class="confirm" id="confirmDialog">
+  <h3 id="confirmTitle"></h3>
+  <p id="confirmBody"></p>
+  <div class="dlg-actions">
+    <button class="btn" id="confirmCancel" type="button">Cancel</button>
+    <button class="btn danger" id="confirmOk" type="button">Delete</button>
+  </div>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
