@@ -3,8 +3,13 @@
 
 
 
-let state = { players: [], games: [] };
+let state = { players: [], games: [], sessions: [] };
 let route = parseHash();
+
+// Per-device session choice: this device remembers which session it works in.
+const SESSION_KEY = "cambio-session";
+let activeSessionId = null;
+let addingSession = false;
 let editingRoundId = null;
 let renamingPlayerId = null;
 let statsSort = { key: "mean", dir: 1 };
@@ -61,7 +66,23 @@ async function refresh() {
       else loadError = "You're offline and this device has no saved data yet.";
     } else loadError = e.message;
   }
+  resolveActiveSession();
   render();
+}
+
+// Resolve which session this device is working in: the last one it picked
+// (localStorage), or the server's first session if none was picked yet.
+function resolveActiveSession() {
+  let saved = null;
+  try { saved = localStorage.getItem(SESSION_KEY); } catch {}
+  if (saved && state.sessions.some((s) => s.id === saved)) activeSessionId = saved;
+  else activeSessionId = state.sessions.length ? state.sessions[0].id : null;
+}
+
+function setActiveSession(id) {
+  activeSessionId = id;
+  addingSession = false;
+  try { localStorage.setItem(SESSION_KEY, id); } catch {}
 }
 
 // ---------- offline store + sync ----------
@@ -239,7 +260,12 @@ function fmtDate(iso) {
 }
 function playerById(id) { return state.players.find((p) => p.id === id); }
 function gameById(id) { return state.games.find((g) => g.id === id); }
-function latestGame() { return state.games.length ? state.games[state.games.length - 1] : null; }
+// Games of the session this device is currently working in, creation order.
+function sessionGames() {
+  if (!activeSessionId) return state.games;
+  return state.games.filter((g) => g.session_id === activeSessionId);
+}
+function latestGame() { const gs = sessionGames(); return gs.length ? gs[gs.length - 1] : null; }
 
 // stats scoped to a list of games: per player across all their rounds in them
 function computeStats(games) {
@@ -328,22 +354,54 @@ function renderGameView() {
   else renderGame(host, game);
 }
 
+// Session picker: choose which session this device works in before making games.
+function sessionPicker() {
+  const row = el("div", { class: "session-picker" });
+  for (const s of state.sessions) {
+    row.append(el("button", {
+      class: `session-chip${s.id === activeSessionId ? " active" : ""}`,
+      dataset: { action: "select-session", id: s.id },
+    }, s.name));
+  }
+  if (addingSession) {
+    const inp = el("input", { class: "session-input", placeholder: "Session name…", maxlength: 30 });
+    inp.addEventListener("keydown", async (e) => {
+      if (e.key === "Escape") { addingSession = false; render(); }
+      else if (e.key === "Enter") {
+        const name = inp.value.trim();
+        if (!name) return;
+        if (!navigator.onLine) { alert("You're offline — creating a session needs a connection."); return; }
+        try {
+          const s = await api("POST", "/api/sessions", { name });
+          setActiveSession(s.id);
+          await refresh();
+        } catch (err) { alert(err.message); addingSession = false; render(); }
+      }
+    });
+    row.append(inp);
+    setTimeout(() => inp.focus(), 50);
+  } else {
+    row.append(el("button", { class: "session-chip new", dataset: { action: "new-session" } }, "+ New"));
+  }
+  return row;
+}
+
 function renderHome(host) {
-  if (!state.games.length) {
-    host.append(
-      el("div", { class: "title-row" },
-        el("div", {}, el("h1", {}, "Games"), el("div", { class: "sub" }, "Scorekeeper for your card nights"))),
-      el("div", { class: "panel stack" },
-        el("p", { style: "color:var(--muted)" }, "No games yet. Start tonight's game and add the players at the table."),
-        el("button", { class: "btn primary", dataset: { action: "new-game" } }, "Start your first game"),
-      ),
-    );
+  host.append(
+    el("div", { class: "title-row" },
+      el("div", {}, el("h1", {}, "Games"), el("div", { class: "sub" }, "Scorekeeper for your card nights"))),
+    sessionPicker(),
+  );
+  const games = sessionGames();
+  if (!games.length) {
+    host.append(el("div", { class: "panel stack" },
+      el("p", { style: "color:var(--muted)" }, "No games in this session yet. Start tonight's game and add the players at the table."),
+      el("button", { class: "btn primary", dataset: { action: "new-game" } }, "Start a game"),
+    ));
     return;
   }
   const latest = latestGame();
   host.append(
-    el("div", { class: "title-row" },
-      el("div", {}, el("h1", {}, "Games"), el("div", { class: "sub" }, "Scorekeeper for your card nights"))),
     el("div", { class: "panel continue-card" },
       el("div", {},
         el("div", { class: "game-name" }, latest.name),
@@ -355,7 +413,7 @@ function renderHome(host) {
         el("button", { class: "btn", dataset: { action: "new-game" } }, "New game")),
     ),
   );
-  const past = state.games.slice(0, -1).reverse();
+  const past = games.slice(0, -1).reverse();
   if (past.length) {
     host.append(el("div", { class: "panel", style: "margin-top:var(--gap)" },
       el("header", {}, el("h2", {}, "Past games"), el("span", { class: "meta" }, `${past.length}`)),
@@ -762,11 +820,11 @@ async function act(action, node) {
       case "new-game": {
         let g = null;
         if (navigator.onLine) {
-          try { g = await api("POST", "/api/games", {}); }
+          try { g = await api("POST", "/api/games", { session_id: activeSessionId }); }
           catch (e) { if (!isNetError(e)) throw e; }
         }
         if (!g) {
-          g = { id: newId("g"), name: autoGameName(), created_at: new Date().toISOString(), roster: [], rounds: [] };
+          g = { id: newId("g"), name: autoGameName(), created_at: new Date().toISOString(), session_id: activeSessionId, roster: [], rounds: [] };
           state.games.push(g);
           store.markDirty(g);
           localApplied();
@@ -776,6 +834,14 @@ async function act(action, node) {
       }
       case "open-game":
         location.hash = `#/game/${id}`;
+        break;
+      case "select-session":
+        setActiveSession(id);
+        render();
+        break;
+      case "new-session":
+        addingSession = true;
+        render();
         break;
       case "rename-game": {
         const game = gameById(route.gameId);

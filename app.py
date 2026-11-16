@@ -2,8 +2,9 @@
 """Cambio scorekeeper — FastAPI + single JSON file storage.
 
 Data model (data.json):
+  sessions: [{id, name}]                     # group of game nights (e.g. a trip)
   players: [{id, name}]                      # global registry, display order
-  games:   [{id, name, created_at, roster: [player_id], rounds: [{id, scores: {player_id: int}}]}]
+  games:   [{id, name, created_at, session_id, roster: [player_id], rounds: [{id, scores: {player_id: int}}]}]
 
 A round cell is a player_id -> integer score. Absent players are simply missing keys.
 Single writer (one phone on the LAN); every mutation is an atomic rewrite (tmp + rename).
@@ -34,7 +35,11 @@ MAX_BAKS = 14
 # ---------- storage ----------
 
 def _default() -> dict:
-    return {"players": [], "games": []}
+    return {
+        "players": [],
+        "games": [],
+        "sessions": [{"id": "s-erasmus-madrid", "name": "Erasmus Madrid"}],
+    }
 
 
 def load() -> dict:
@@ -44,6 +49,14 @@ def load() -> dict:
         data = json.load(f)
     data.setdefault("players", [])
     data.setdefault("games", [])
+    data.setdefault("sessions", [])
+    if not data["sessions"]:
+        # first run of an existing dataset: seed the default session and attach
+        # every pre-existing game to it
+        data["sessions"].append({"id": "s-erasmus-madrid", "name": "Erasmus Madrid"})
+        for g in data["games"]:
+            g.setdefault("session_id", "s-erasmus-madrid")
+        save(data)
     return data
 
 
@@ -140,9 +153,14 @@ class PlayerIn(BaseModel):
     name: str = Field(min_length=1, max_length=30)
 
 
+class SessionIn(BaseModel):
+    name: str = Field(min_length=1, max_length=30)
+
+
 class GameIn(BaseModel):
     name: Optional[str] = None
     player_ids: list[str] = []
+    session_id: Optional[str] = None
 
 
 class GamePatch(BaseModel):
@@ -168,6 +186,7 @@ class SyncGameIn(BaseModel):
     id: str
     name: str
     created_at: Optional[str] = None
+    session_id: Optional[str] = None
     roster: list[str] = []
     rounds: list[SyncRoundIn] = []
 
@@ -191,6 +210,21 @@ def _startup() -> None:
 def get_state():
     with LOCK:
         return load()
+
+
+# sessions ----------------------------------------------------------------
+
+@app.post("/api/sessions", status_code=201)
+def create_session(body: SessionIn):
+    name = _clean_name(body.name)
+    with LOCK:
+        data = load()
+        if any(s["name"].strip().casefold() == name.strip().casefold() for s in data["sessions"]):
+            raise HTTPException(409, "a session with this name already exists")
+        s = {"id": _new_id("s"), "name": name}
+        data["sessions"].append(s)
+        save(data)
+        return s
 
 
 # players -----------------------------------------------------------------
@@ -242,6 +276,9 @@ def create_game(body: GameIn):
     with LOCK:
         data = load()
         name = _clean_name(body.name) if body.name else _auto_game_name()
+        sid = body.session_id or data["sessions"][0]["id"]
+        if not any(s["id"] == sid for s in data["sessions"]):
+            raise HTTPException(404, "session not found")
         roster = []
         for pid in body.player_ids:
             _find_player(data, pid)
@@ -251,6 +288,7 @@ def create_game(body: GameIn):
             "id": _new_id("g"),
             "name": name,
             "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "session_id": sid,
             "roster": roster,
             "rounds": [],
         }
@@ -363,11 +401,13 @@ def sync(body: SyncIn):
                 existing["rounds"] = rounds
                 synced.append(existing["id"])
             else:
+                valid_sid = next((s["id"] for s in data["sessions"] if s["id"] == g.session_id), None)
                 data["games"].append({
                     "id": g.id,
                     "name": _clean_name(g.name),
                     "created_at": g.created_at
                     or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "session_id": valid_sid or data["sessions"][0]["id"],
                     "roster": roster,
                     "rounds": rounds,
                 })

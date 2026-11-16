@@ -12,6 +12,7 @@
   --muted: #b4b4b4;
   --faint: #a3a3a3;
   --accent: #c6f24e;          /* one data hue: winners, focus, the selected thing */
+  --accent-ink: #101502;      /* text that sits on the accent */
   --positive: #c6f24e;        /* lime is a yellow-green → it doubles as positive */
   --negative: #e5484d;
   --warning: #e5a93b;
@@ -50,6 +51,7 @@ html[data-theme="light"] {
   --muted: #5d5d57;
   --faint: #8a8a83;
   --accent: #587a0a;          /* deepened lime for contrast on white */
+  --accent-ink: #ffffff;      /* text that sits on the accent */
   --positive: #587a0a;
   --negative: #cf3a40;
   --warning: #b3790f;
@@ -301,4 +303,12 @@ dialog.confirm .dlg-actions { display: flex; justify-content: flex-end; gap: 8px
   .seg-btn { min-height: 44px; }
   .game-row, .player-row { min-height: 56px; }
 }
+/* ---------- session picker ---------- */
+.session-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--gap); }
+.session-chip { min-height: 44px; padding: 0 16px; border-radius: var(--radius-control); background: var(--surface); color: var(--muted); font-size: var(--fs-body); font-weight: 600; border: 1px solid var(--border); transition: background var(--t-press) var(--ease-out), color var(--t-press) var(--ease-out); }
+.session-chip:active { transform: scale(.97); }
+.session-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.session-chip.new { border-style: dashed; color: var(--faint); font-weight: 500; }
+.session-input { min-height: 44px; width: 190px; padding: 0 16px; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--accent); color: var(--text); font-size: var(--fs-body); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation: none !important; } }
