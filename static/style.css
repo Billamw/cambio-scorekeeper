@@ -114,6 +114,8 @@ a { color: inherit; text-decoration: none; }
 .topbar-title { font-size: var(--fs-section); font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar-sub { color: var(--faint); font-size: var(--fs-small); white-space: nowrap; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.topbar-session { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: var(--fs-small); font-weight: 600; text-decoration: none; flex: none; }
+.topbar-session:active { transform: scale(.97); }
 .menu-toggle { display: none; }
 
 .canvas { padding: var(--pad); padding-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0)); width: 100%; display: flex; flex-direction: column; }
@@ -269,10 +271,10 @@ tr.row-editing td { background: var(--raised); }
 
 /* ---------- bottom bar (phone nav) ---------- */
 .bottombar { display: none; }
-.bottombar-sync { flex: none; width: 56px; position: relative; display: grid; place-items: center; background: none; border: 0; color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.bottombar-sync svg { width: 20px; height: 20px; stroke-width: 1.5; }
-.bottombar-sync[data-sync-state="pending"] { color: var(--accent); }
-.bottombar-sync.has-pending::after { content: ""; position: absolute; top: 9px; right: 13px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.sync-float { display: none; }
+.sync-float svg { width: 20px; height: 20px; stroke-width: 1.5; }
+.sync-float[data-sync-state="pending"] { color: var(--accent); }
+.sync-float.has-pending::after { content: ""; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 
 /* ---------- confirm dialog ---------- */
 dialog.confirm { margin: auto; background: var(--surface); color: var(--text); border: 0; border-radius: 16px; padding: 20px; width: min(92vw, 380px); box-shadow: 0 12px 28px rgba(0,0,0,.5); /* taste-skill-ignore: shadow — real dialog overlay */ }
@@ -291,6 +293,7 @@ dialog.confirm .dlg-actions { display: flex; justify-content: flex-end; gap: 8px
   .bottombar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 11px; font-weight: 500; }
   .bottombar a svg { width: 20px; height: 20px; stroke-width: 1.5; }
   .bottombar a[aria-current="page"] { color: var(--accent); }
+  .sync-float { display: grid; place-items: center; position: fixed; left: 14px; bottom: calc(56px + env(safe-area-inset-bottom, 0) + 12px); z-index: 20; width: 44px; height: 44px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); color: var(--muted); cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .kpis { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kpi + .kpi { border-left: 0; }
   .kpi:nth-child(n + 3) { border-top: 1px solid var(--border); }
@@ -304,11 +307,6 @@ dialog.confirm .dlg-actions { display: flex; justify-content: flex-end; gap: 8px
   .game-row, .player-row { min-height: 56px; }
 }
 /* ---------- session picker ---------- */
-.session-picker { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--gap); }
-.session-chip { min-height: 44px; padding: 0 16px; border-radius: var(--radius-control); background: var(--surface); color: var(--muted); font-size: var(--fs-body); font-weight: 600; border: 1px solid var(--border); transition: background var(--t-press) var(--ease-out), color var(--t-press) var(--ease-out); }
-.session-chip:active { transform: scale(.97); }
-.session-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.session-chip.new { border-style: dashed; color: var(--faint); font-weight: 500; }
 .session-input { min-height: 44px; width: 190px; padding: 0 16px; border-radius: var(--radius-control); background: var(--surface); border: 1px solid var(--accent); color: var(--text); font-size: var(--fs-body); }
 
 /* ---------- sessions tab ---------- */

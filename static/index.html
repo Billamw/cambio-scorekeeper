@@ -46,6 +46,7 @@
     <header class="topbar">
       <span class="topbar-title" id="topbarTitle">Cambio</span>
       <span class="topbar-sub" id="topbarSub"></span>
+      <a class="topbar-session" href="#/sessions" id="topbarSession" hidden></a>
       <div class="topbar-actions" id="topbarActions"></div>
     </header>
 
@@ -59,7 +60,6 @@
   </div>
 
   <nav class="bottombar" aria-label="Main">
-    <button type="button" class="bottombar-sync" data-sync data-action="sync-now" id="bottombarSync"></button>
     <a href="#/game" data-nav="game">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="5" width="13" height="16" rx="2"/><path d="M8 3h11a2 2 0 0 1 2 2v12"/></svg>
       Game
@@ -77,6 +77,8 @@
       Sessions
     </a>
   </nav>
+
+  <button type="button" class="sync-float" data-sync data-action="sync-now" id="syncFloat" aria-label="Sync status"></button>
 
 </div>
 

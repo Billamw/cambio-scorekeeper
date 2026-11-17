@@ -338,6 +338,13 @@ function renderChrome() {
   else if (route.view === "sessions") scope = `${state.sessions.length} sessions · tap one to switch`;
   if (scope) sub.textContent = scope;
 
+  const sb = document.getElementById("topbarSession");
+  if (sb) {
+    sb.textContent = sessName || "";
+    sb.hidden = !sessName;
+    sb.title = sessName ? `Session: ${sessName} — tap to manage` : "";
+  }
+
   const ta = document.getElementById("topbarActions");
   if (ta) {
     const dark = currentTheme() === "dark";
@@ -382,30 +389,10 @@ function newSessionInput() {
   return inp;
 }
 
-// Session picker: choose which session this device works in before making games.
-function sessionPicker() {
-  const row = el("div", { class: "session-picker" });
-  for (const s of state.sessions) {
-    row.append(el("button", {
-      class: `session-chip${s.id === activeSessionId ? " active" : ""}`,
-      dataset: { action: "select-session", id: s.id },
-    }, s.name));
-  }
-  if (addingSession) {
-    const inp = newSessionInput();
-    row.append(inp);
-    setTimeout(() => inp.focus(), 50);
-  } else {
-    row.append(el("button", { class: "session-chip new", dataset: { action: "new-session" } }, "+ New"));
-  }
-  return row;
-}
-
 function renderHome(host) {
   host.append(
     el("div", { class: "title-row" },
       el("div", {}, el("h1", {}, "Games"), el("div", { class: "sub" }, "Scorekeeper for your card nights"))),
-    sessionPicker(),
   );
   const games = sessionGames();
   if (!games.length) {

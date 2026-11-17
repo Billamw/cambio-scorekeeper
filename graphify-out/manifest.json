@@ -20,9 +20,9 @@
     "semantic_hash": ""
   },
   "static/app.js": {
-    "mtime": 1794860569.398543,
-    "seen": 1794862504.6402829,
-    "ast_hash": "ab43206885d1ed624f456fa11bc03685",
+    "mtime": 1794882002.6717203,
+    "seen": 1794882094.382099,
+    "ast_hash": "f59f73c72dbe68369c24a23a9d446169",
     "semantic_hash": ""
   },
   "README.md": {
@@ -32,9 +32,9 @@
     "semantic_hash": ""
   },
   "static/index.html": {
-    "mtime": 1794860463.7539933,
-    "seen": 1794862504.6402893,
-    "ast_hash": "2ff857f9979d9e2c25d70d4b502f4820",
+    "mtime": 1794882019.8460462,
+    "seen": 1794882094.382108,
+    "ast_hash": "5a48d75b4033338b9b2174ecddb15419",
     "semantic_hash": ""
   },
   ".taste-skill/inspect/desktop-fold.jpg": {
@@ -116,9 +116,9 @@
     "semantic_hash": ""
   },
   "static/sw.js": {
-    "mtime": 1794860463.7619112,
-    "seen": 1794862504.6402864,
-    "ast_hash": "28175b965d73b4fff6045e75555dc402",
+    "mtime": 1794882019.9495058,
+    "seen": 1794882094.382104,
+    "ast_hash": "0c5c2cebbe0cc217ae0677b307ab3697",
     "semantic_hash": ""
   },
   "docker-compose.example.yml": {
