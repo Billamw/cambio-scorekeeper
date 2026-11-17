@@ -20,9 +20,9 @@
     "semantic_hash": ""
   },
   "static/app.js": {
-    "mtime": 1794882002.6717203,
-    "seen": 1794882094.382099,
-    "ast_hash": "f59f73c72dbe68369c24a23a9d446169",
+    "mtime": 1794883148.6720133,
+    "seen": 1794883195.05139,
+    "ast_hash": "f0a5934cc28012414031b9257692fb96",
     "semantic_hash": ""
   },
   "README.md": {
@@ -116,9 +116,9 @@
     "semantic_hash": ""
   },
   "static/sw.js": {
-    "mtime": 1794883023.7610717,
-    "seen": 1794883136.0814433,
-    "ast_hash": "f9ecffc94986c5e98dcc3ab6e6a2a773",
+    "mtime": 1794883153.693462,
+    "seen": 1794883195.0513954,
+    "ast_hash": "4e808763a3586d7847df9c3896bbbb4b",
     "semantic_hash": ""
   },
   "docker-compose.example.yml": {

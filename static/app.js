@@ -719,7 +719,6 @@ function fmtMean(total, rounds) {
 function statCard(r, rank) {
   return el("div", { class: "scard" },
     el("div", { class: "scard-head" },
-      logoChip(),
       el("span", { class: "p-name" }, r.p.name),
       el("span", { class: `scard-rank${rank === 1 ? " lead" : ""}` }, "#" + rank)),
     el("div", { class: "scard-main num" }, fmtMean(r.total, r.rounds),
