@@ -116,9 +116,9 @@
     "semantic_hash": ""
   },
   "static/sw.js": {
-    "mtime": 1794882019.9495058,
-    "seen": 1794882094.382104,
-    "ast_hash": "0c5c2cebbe0cc217ae0677b307ab3697",
+    "mtime": 1794883023.7610717,
+    "seen": 1794883136.0814433,
+    "ast_hash": "f9ecffc94986c5e98dcc3ab6e6a2a773",
     "semantic_hash": ""
   },
   "docker-compose.example.yml": {

@@ -135,7 +135,7 @@ a { color: inherit; text-decoration: none; }
 .stack { display: grid; gap: var(--gap); }
 
 /* ---------- KPIs: one divided strip, label over value, no icons ---------- */
-.kpis { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--surface); border-radius: var(--radius-card); }
+.kpis { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--surface); border-radius: var(--radius-card); margin-bottom: var(--gap); }
 .kpi { padding: 14px var(--card-pad); }
 .kpi + .kpi { border-left: 1px solid var(--border); }
 .kpi-label { color: var(--muted); font-size: var(--fs-small); }
