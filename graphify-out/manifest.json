@@ -14,9 +14,9 @@
     "ast_empty": true
   },
   "app.py": {
-    "mtime": 1794860429.686391,
-    "seen": 1794862504.6402783,
-    "ast_hash": "0939d7d2652fbf24840dfc66629f4dfd",
+    "mtime": 1794883519.4786801,
+    "seen": 1794883570.8766484,
+    "ast_hash": "df4514cc53df3236e344754ef011e0c5",
     "semantic_hash": ""
   },
   "static/app.js": {
@@ -116,9 +116,9 @@
     "semantic_hash": ""
   },
   "static/sw.js": {
-    "mtime": 1794883239.07885,
-    "seen": 1794883309.740525,
-    "ast_hash": "8eeba3c8b7e7a41cc0f7335ebd882712",
+    "mtime": 1794883519.4791486,
+    "seen": 1794883570.8766584,
+    "ast_hash": "41d4e8e17cb4ceae712816ea3f7dfb49",
     "semantic_hash": ""
   },
   "docker-compose.example.yml": {

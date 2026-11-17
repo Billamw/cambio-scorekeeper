@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 DATA_DIR = Path(os.environ.get("CAMBIO_DATA", str(Path(__file__).parent / "data")))
@@ -454,10 +454,20 @@ def sync(body: SyncIn):
 STATIC_DIR = Path(__file__).parent / "static"
 
 
+_SHELL_FILES = (
+    "app.js",
+    "style.css",
+    "index.html",
+    "manifest.json",
+)
+
+
 def _asset_version() -> str:
     h = hashlib.sha256()
-    for name in ("app.js", "style.css"):
+    for name in _SHELL_FILES:
         h.update((STATIC_DIR / name).read_bytes())
+    for name in ("cambio-logo_white.svg", "cambio-logo_black.svg"):
+        h.update((Path(__file__).parent / "icons" / name).read_bytes())
     return h.hexdigest()[:10]
 
 
@@ -474,5 +484,11 @@ app.mount("/icons", __import__("fastapi.staticfiles", fromlist=["StaticFiles"]).
 
 @app.get("/sw.js")
 def service_worker():
-    # served from the root so its default scope covers the whole app
-    return FileResponse(STATIC_DIR / "sw.js", headers={"Service-Worker-Allowed": "/"})
+    # served from the root so its default scope covers the whole app.
+    # the cache name is auto-versioned from shell-file contents: any
+    # frontend change changes sw.js bytes, which is what triggers the
+    # browser update check — nobody can forget a manual cache bump.
+    src = (STATIC_DIR / "sw.js").read_text(encoding="utf-8")
+    body = src.replace("__CACHE__", f"cambio-{_asset_version()}")
+    return Response(content=body, media_type="application/javascript",
+                    headers={"Service-Worker-Allowed": "/"})

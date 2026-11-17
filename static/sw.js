@@ -1,6 +1,8 @@
 // Cambio service worker — app-shell cache for PWA install + offline shell.
 // /api/* is NEVER cached: game data always comes from the server.
-const CACHE = "cambio-v8";
+// CACHE is injected by app.py when serving this file (content hash of the
+// shell files). The placeholder literal stays stable in the repo.
+const CACHE = "__CACHE__";
 const SHELL = [
   "/",
   "/static/manifest.json",
